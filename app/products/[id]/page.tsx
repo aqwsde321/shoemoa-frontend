@@ -1,0 +1,246 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Minus, Plus, ShoppingBag, Check } from "lucide-react";
+import { Header } from "@/components/layout/header";
+import { Button } from "@/components/ui/button";
+import { getProductById, addToCart } from "@/lib/api";
+import type { Product } from "@/lib/types";
+
+export default function ProductDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      try {
+        const response = await getProductById(Number(id));
+        if (response.success && response.data) {
+          setProduct(response.data);
+          if (response.data.size.length > 0) {
+            setSelectedSize(response.data.size[0]);
+          }
+        }
+      } catch (error) {
+        console.error("[v0] Failed to fetch product:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("ko-KR").format(price);
+  };
+
+  const handleAddToCart = async () => {
+    if (!product || !selectedSize) return;
+
+    setIsAddingToCart(true);
+    try {
+      await addToCart(product.id, quantity, selectedSize, product.color);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    } catch (error) {
+      console.error("[v0] Failed to add to cart:", error);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product || !selectedSize) return;
+
+    setIsAddingToCart(true);
+    try {
+      await addToCart(product.id, quantity, selectedSize, product.color);
+      router.push("/cart");
+    } catch (error) {
+      console.error("[v0] Failed to add to cart:", error);
+      setIsAddingToCart(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-6 bg-secondary rounded w-24 mb-8" />
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
+              <div className="aspect-square bg-secondary rounded-lg" />
+              <div className="space-y-6">
+                <div className="h-8 bg-secondary rounded w-3/4" />
+                <div className="h-6 bg-secondary rounded w-1/4" />
+                <div className="h-4 bg-secondary rounded w-full" />
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-xl font-semibold mb-4">상품을 찾을 수 없습니다</h1>
+            <Button asChild>
+              <Link href="/products">상품 목록으로</Link>
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <Link
+          href="/products"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>상품 목록</span>
+        </Link>
+
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
+          {/* Product Image */}
+          <div className="aspect-square overflow-hidden rounded-lg bg-secondary">
+            <img
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              className="h-full w-full object-cover object-center"
+              crossOrigin="anonymous"
+            />
+          </div>
+
+          {/* Product Info */}
+          <div className="flex flex-col">
+            <div className="flex-1 space-y-6">
+              {/* Title & Price */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">{product.color}</p>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                  {product.name}
+                </h1>
+                <p className="text-2xl font-semibold mt-4">
+                  {formatPrice(product.price)}원
+                </p>
+              </div>
+
+              {/* Description */}
+              {product.description && (
+                <p className="text-muted-foreground leading-relaxed">
+                  {product.description}
+                </p>
+              )}
+
+              {/* Size Selection */}
+              <div className="space-y-3">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  사이즈
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {product.size.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        selectedSize === size
+                          ? "bg-foreground text-background"
+                          : "bg-secondary text-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quantity */}
+              <div className="space-y-3">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  수량
+                </label>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                    <span className="sr-only">수량 감소</span>
+                  </Button>
+                  <span className="w-12 text-center font-medium">{quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setQuantity(quantity + 1)}
+                    disabled={quantity >= product.stock}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="sr-only">수량 증가</span>
+                  </Button>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    재고 {product.stock}개
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3 pt-8 mt-8 border-t border-border">
+              <Button
+                className="w-full h-12 gap-2"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || product.stock === 0}
+              >
+                {addedToCart ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    장바구니에 추가됨
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="h-4 w-4" />
+                    장바구니 담기
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-12 bg-transparent"
+                onClick={handleBuyNow}
+                disabled={isAddingToCart || product.stock === 0}
+              >
+                바로 구매
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
