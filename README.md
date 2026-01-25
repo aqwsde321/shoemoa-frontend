@@ -1,30 +1,61 @@
-# Shoemoa UI pages
+# Shoemoa Frontend (UI Pages)
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+신발 쇼핑몰 사이드 프로젝트 **Shoemoa**의 프론트엔드 UI 레포지토리입니다.  
+Vercel v0를 통해 UI를 생성하고, Vercel로 배포됩니다.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/aqwsde321s-projects/v0-shoemoa-ui-pages)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/erzEq89rgYT)
+---
 
-## Overview
+## 🔗 Live Demo
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+**Frontend URL**  
+👉 https://shoemoa-frontend-79l17mixy-aqwsde321s-projects.vercel.app/
 
-## Deployment
+---
 
-Your project is live at:
+## 🛠 Tech Stack
 
-**[https://vercel.com/aqwsde321s-projects/v0-shoemoa-ui-pages](https://vercel.com/aqwsde321s-projects/v0-shoemoa-ui-pages)**
+- React (v0 generated)
+- Tailwind CSS
+- shadcn/ui
+- Vercel (Hosting)
+- Spring Boot REST API 연동 예정
 
-## Build your app
+---
 
-Continue building your app on:
+## 📦 Project Overview
 
-**[https://v0.app/chat/erzEq89rgYT](https://v0.app/chat/erzEq89rgYT)**
+이 프로젝트는 다음 화면을 포함합니다.
 
-## How It Works
+### 사용자 화면
+- 회원가입 / 로그인
+- 상품 목록 (검색 / 정렬)
+- 상품 상세
+- 장바구니
+- 주문
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+### 관리자 화면
+- 상품 목록 조회
+- 상품 등록 / 수정 / 삭제
+- 모바일 반응형 지원
+
+> 현재는 UI 중심으로 구성되어 있으며,  
+> 백엔드(Spring REST API) 연동은 단계적으로 진행 중입니다.
+
+---
+
+## 🚀 Deployment
+
+- **Hosting**: Vercel
+- **Project Dashboard**  
+  https://vercel.com/aqwsde321s-projects/shoemoa-frontend/GmUBnNvEeisMx8G3yjtBxuJBiFL9
+
+- `main` 브랜치에 push 시 자동 배포됩니다.
+
+---
+
+## 🔧 Environment Variables
+
+API 주소는 환경변수로 관리합니다.
+
+```bash
+VITE_API_BASE_URL=https://api.your-domain.com
