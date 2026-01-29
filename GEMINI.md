@@ -50,3 +50,7 @@ npm run lint
 *   **API Integration**: API-related code can be found in `lib/api`. The base URL for the API is configured via the `VITE_API_BASE_URL` environment variable.
 *   **Mock Data**: Mock data for development is located in `lib/mock-data.ts`.
 *   **Deployment**: The project is configured for continuous deployment on [Vercel](https://vercel.com/). Pushing to the `main` branch will trigger a new deployment.
+
+## Agent Instructions
+
+- The agent should always respond in Korean.
