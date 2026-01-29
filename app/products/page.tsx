@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { getProducts } from "@/lib/api";
 import type { Product, ProductFilters } from "@/lib/types";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import { AVAILABLE_SIZES, AVAILABLE_COLORS } from "@/lib/mock-data";
 
 export default function ProductsPage() {
@@ -37,11 +38,12 @@ export default function ProductsPage() {
     maxPrice: undefined,
     sortBy: "newest",
   });
+  const debouncedKeyword = useDebounce(filters.keyword, 500);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (currentFilters: ProductFilters) => {
     setIsLoading(true);
     try {
-      const response = await getProducts(filters);
+      const response = await getProducts(currentFilters);
       if (response.success) {
         setProducts(response.data);
       }
@@ -53,8 +55,9 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, [filters]);
+    const currentFilters = { ...filters, keyword: debouncedKeyword };
+    fetchProducts(currentFilters);
+  }, [debouncedKeyword, filters.size, filters.color, filters.minPrice, filters.maxPrice, filters.sortBy]);
 
   const handleFilterChange = (key: keyof ProductFilters, value: string | number | undefined) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

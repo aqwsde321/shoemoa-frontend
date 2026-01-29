@@ -1,55 +1,62 @@
 "use client";
 
-import React from "react"
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signup } from "@/lib/api";
 
+const formSchema = z
+  .object({
+    email: z.string().email({ message: "유효한 이메일을 입력하세요." }),
+    name: z.string().min(2, { message: "이름은 2자 이상이어야 합니다." }),
+    password: z.string().min(8, { message: "비밀번호는 8자 이상이어야 합니다." }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "비밀번호가 일치하지 않습니다.",
+    path: ["confirmPassword"],
+  });
+
+type FormData = z.infer<typeof formSchema>;
+
 export default function SignupPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
-    email: "",
-    name: "",
-    password: "",
-    confirmPassword: "",
+  
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      name: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const {
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("비밀번호가 일치하지 않습니다.");
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 합니다.");
-      return;
-    }
-
-    setIsLoading(true);
-
+  const onSubmit = async (data: FormData) => {
     try {
-      const response = await signup(formData.email, formData.password, formData.name);
+      const response = await signup(data.email, data.password, data.name);
       if (response.success) {
         console.log("[v0] Signup successful:", response.data);
         router.push("/login");
+      } else {
+        form.setError("root", { message: response.message || "회원가입에 실패했습니다." });
       }
     } catch {
-      setError("회원가입에 실패했습니다. 다시 시도해주세요.");
-    } finally {
-      setIsLoading(false);
+      form.setError("root", { message: "회원가입 중 오류가 발생했습니다." });
     }
   };
 
@@ -79,7 +86,7 @@ export default function SignupPage() {
           </div>
 
           {/* Signup Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -89,11 +96,10 @@ export default function SignupPage() {
                   id="email"
                   type="email"
                   placeholder="email@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
+                  {...form.register("email")}
                   className="h-12 bg-secondary border-0 focus-visible:ring-foreground"
                 />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -104,11 +110,10 @@ export default function SignupPage() {
                   id="name"
                   type="text"
                   placeholder="이름을 입력하세요"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
+                  {...form.register("name")}
                   className="h-12 bg-secondary border-0 focus-visible:ring-foreground"
                 />
+                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -120,9 +125,7 @@ export default function SignupPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="8자 이상 입력하세요"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
+                    {...form.register("password")}
                     className="h-12 bg-secondary border-0 pr-12 focus-visible:ring-foreground"
                   />
                   <Button
@@ -136,6 +139,7 @@ export default function SignupPage() {
                     <span className="sr-only">{showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}</span>
                   </Button>
                 </div>
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -147,9 +151,7 @@ export default function SignupPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="비밀번호를 다시 입력하세요"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    required
+                    {...form.register("confirmPassword")}
                     className="h-12 bg-secondary border-0 pr-12 focus-visible:ring-foreground"
                   />
                   <Button
@@ -163,19 +165,20 @@ export default function SignupPage() {
                     <span className="sr-only">{showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 보기"}</span>
                   </Button>
                 </div>
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
+            {errors.root && (
+              <p className="text-sm text-destructive text-center">{errors.root.message}</p>
             )}
 
             <Button
               type="submit"
               className="w-full h-12 text-sm font-medium"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? "가입 중..." : "회원가입"}
+              {isSubmitting ? "가입 중..." : "회원가입"}
             </Button>
           </form>
 

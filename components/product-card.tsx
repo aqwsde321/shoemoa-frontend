@@ -3,14 +3,15 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("ko-KR").format(price);
+};
+
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("ko-KR").format(price);
-  };
 
   return (
     <Link href={`/products/${product.id}`} className="group block">

@@ -1,42 +1,53 @@
 "use client";
 
-import React from "react"
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/lib/api";
 
+const formSchema = z.object({
+  email: z.string().email({ message: "유효한 이메일을 입력하세요." }),
+  password: z.string().min(8, { message: "비밀번호는 8자 이상이어야 합니다." }),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const {
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
 
+  const onSubmit = async (data: FormData) => {
     try {
-      const response = await login(formData.email, formData.password);
+      const response = await login(data.email, data.password);
       if (response.success) {
         // In a real app, save token to localStorage/cookies
         console.log("[v0] Login successful:", response.data);
         router.push("/products");
+      } else {
+        form.setError("root", { message: response.message || "로그인에 실패했습니다." });
       }
     } catch {
-      setError("로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.");
-    } finally {
-      setIsLoading(false);
+      form.setError("root", { message: "로그인 중 오류가 발생했습니다." });
     }
   };
 
@@ -65,7 +76,7 @@ export default function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -75,11 +86,10 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="email@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
+                  {...form.register("email")}
                   className="h-12 bg-secondary border-0 focus-visible:ring-foreground"
                 />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -91,9 +101,7 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="비밀번호를 입력하세요"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
+                    {...form.register("password")}
                     className="h-12 bg-secondary border-0 pr-12 focus-visible:ring-foreground"
                   />
                   <Button
@@ -107,19 +115,20 @@ export default function LoginPage() {
                     <span className="sr-only">{showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}</span>
                   </Button>
                 </div>
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
+            {errors.root && (
+              <p className="text-sm text-destructive text-center">{errors.root.message}</p>
             )}
 
             <Button
               type="submit"
               className="w-full h-12 text-sm font-medium"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? "로그인 중..." : "로그인"}
+              {isSubmitting ? "로그인 중..." : "로그인"}
             </Button>
           </form>
 

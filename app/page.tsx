@@ -11,12 +11,19 @@ import type { Product } from "@/lib/types";
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchFeatured = async () => {
-      const response = await getProducts({ sortBy: "newest" });
-      if (response.success) {
-        setFeaturedProducts(response.data.slice(0, 4));
+      try {
+        const response = await getProducts({ sortBy: "newest" });
+        if (response.success) {
+          setFeaturedProducts(response.data.slice(0, 4));
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured products:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchFeatured();
@@ -72,9 +79,13 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {loading ? (
+                <p>Loading...</p>
+              ) : (
+                featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))
+              )}
             </div>
 
             <div className="mt-8 text-center sm:hidden">
