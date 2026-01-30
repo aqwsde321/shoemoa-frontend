@@ -6,6 +6,7 @@ export interface Product {
   description?: string; // Made optional based on API response
   color: string;
   price: number;
+  img: string; // Added img based on API response
   // stock: number; // Removed as it's not in the API response
   // size: string[]; // Removed as it's not in the API response
   // image: string; // Removed as it's not in the API response
