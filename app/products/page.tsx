@@ -22,7 +22,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { getProducts } from "@/lib/api";
-import type { Product, ProductFilters } from "@/lib/types";
+import type { Product, ProductFilters, ProductApiResponse } from "@/lib/types"; // Import ProductApiResponse
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { AVAILABLE_SIZES, AVAILABLE_COLORS } from "@/lib/mock-data";
 
@@ -30,22 +30,30 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [totalElements, setTotalElements] = useState(0); // New state for total elements
+  const [totalPages, setTotalPages] = useState(0); // New state for total pages
+  const [currentPage, setCurrentPage] = useState(0); // New state for current page
   const [filters, setFilters] = useState<ProductFilters>({
-    keyword: "",
-    size: "",
+    name: "", // Changed from keyword to name to match API
+    productSize: undefined, // New filter
     color: "",
     minPrice: undefined,
     maxPrice: undefined,
-    sortBy: "newest",
+    sortType: "LATEST", // Changed from sortBy to sortType and default value
+    page: 0, // Default page
+    size: 10, // Default size
   });
-  const debouncedKeyword = useDebounce(filters.keyword, 500);
+  const debouncedName = useDebounce(filters.name, 500); // Debounce 'name' filter
 
   const fetchProducts = async (currentFilters: ProductFilters) => {
     setIsLoading(true);
     try {
       const response = await getProducts(currentFilters);
-      if (response.success) {
-        setProducts(response.data);
+      if (response.success && response.data) {
+        setProducts(response.data.content);
+        setTotalElements(response.data.totalElements);
+        setTotalPages(response.data.totalPages);
+        setCurrentPage(response.data.number);
       }
     } catch (error) {
       console.error("[v0] Failed to fetch products:", error);
@@ -55,26 +63,39 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    const currentFilters = { ...filters, keyword: debouncedKeyword };
-    fetchProducts(currentFilters);
-  }, [debouncedKeyword, filters.size, filters.color, filters.minPrice, filters.maxPrice, filters.sortBy]);
+    // Only pass relevant filters to the API, including debounced name and pagination
+    const apiFilters: ProductFilters = {
+      name: debouncedName, // Use debouncedName for API
+      productSize: filters.productSize,
+      color: filters.color,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sortType: filters.sortType,
+      page: filters.page,
+      size: filters.size,
+    };
+    fetchProducts(apiFilters);
+  }, [debouncedName, filters.productSize, filters.color, filters.minPrice, filters.maxPrice, filters.sortType, filters.page, filters.size]);
+
 
   const handleFilterChange = (key: keyof ProductFilters, value: string | number | undefined) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value, page: 0 })); // Reset page to 0 on filter change
   };
 
   const clearFilters = () => {
     setFilters({
-      keyword: "",
-      size: "",
+      name: "",
+      productSize: undefined,
       color: "",
       minPrice: undefined,
       maxPrice: undefined,
-      sortBy: "newest",
+      sortType: "LATEST",
+      page: 0,
+      size: 10,
     });
   };
 
-  const hasActiveFilters = filters.keyword || filters.size || filters.color || filters.minPrice || filters.maxPrice;
+  const hasActiveFilters = filters.name || filters.productSize || filters.color || filters.minPrice || filters.maxPrice;
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -84,8 +105,8 @@ export default function ProductsPage() {
           사이즈
         </Label>
         <Select
-          value={filters.size || "all"}
-          onValueChange={(v) => handleFilterChange("size", v === "all" ? "" : v)}
+          value={filters.productSize?.toString() || "all"} // Use productSize
+          onValueChange={(v) => handleFilterChange("productSize", v === "all" ? undefined : Number(v))} // Update productSize
         >
           <SelectTrigger className="h-11 bg-secondary border-0">
             <SelectValue placeholder="전체" />
@@ -93,7 +114,7 @@ export default function ProductsPage() {
           <SelectContent>
             <SelectItem value="all">전체</SelectItem>
             {AVAILABLE_SIZES.map((size) => (
-              <SelectItem key={size} value={size}>
+              <SelectItem key={size} value={size.toString()}> // Convert to string
                 {size}mm
               </SelectItem>
             ))}
@@ -170,7 +191,7 @@ export default function ProductsPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">전체 상품</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {products.length}개의 상품
+            {totalElements}개의 상품
           </p>
         </div>
 
@@ -182,16 +203,16 @@ export default function ProductsPage() {
             <Input
               type="text"
               placeholder="상품명으로 검색"
-              value={filters.keyword}
-              onChange={(e) => handleFilterChange("keyword", e.target.value)}
+              value={filters.name} // Use filters.name
+              onChange={(e) => handleFilterChange("name", e.target.value)} // Update filters.name
               className="h-11 pl-10 bg-secondary border-0"
             />
-            {filters.keyword && (
+            {filters.name && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
-                onClick={() => handleFilterChange("keyword", "")}
+                onClick={() => handleFilterChange("name", "")}
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">검색어 지우기</span>
@@ -201,17 +222,17 @@ export default function ProductsPage() {
 
           {/* Sort */}
           <Select
-            value={filters.sortBy}
-            onValueChange={(v) => handleFilterChange("sortBy", v as ProductFilters["sortBy"])}
+            value={filters.sortType} // Use filters.sortType
+            onValueChange={(v) => handleFilterChange("sortType", v as ProductFilters["sortType"])} // Update sortType
           >
             <SelectTrigger className="w-full sm:w-40 h-11 bg-secondary border-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">최신순</SelectItem>
-              <SelectItem value="price_asc">가격 낮은순</SelectItem>
-              <SelectItem value="price_desc">가격 높은순</SelectItem>
-              <SelectItem value="name">이름순</SelectItem>
+              <SelectItem value="LATEST">최신순</SelectItem>
+              <SelectItem value="PRICE_ASC">가격 낮은순</SelectItem>
+              <SelectItem value="PRICE_DESC">가격 높은순</SelectItem>
+              <SelectItem value="NAME_ASC">이름순</SelectItem>
             </SelectContent>
           </Select>
 

@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from "./config";
-import type { Product, CartItem, Order, AuthResponse, ProductFilters, ApiResponse } from "../types";
+import type { Product, CartItem, Order, AuthResponse, ProductFilters, ApiResponse, ProductApiResponse } from "../types";
 import { mockProducts, mockCartItems } from "../mock-data";
 
 // Helper function for API calls
@@ -66,52 +66,32 @@ export async function signup(email: string, password: string, name?: string): Pr
 }
 
 // ==================== Products API ====================
-export async function getProducts(filters?: ProductFilters): Promise<ApiResponse<Product[]>> {
-  // Mock implementation with filtering
-  let filtered = [...mockProducts];
+export async function getProducts(filters?: ProductFilters): Promise<ApiResponse<ProductApiResponse>> {
+  const params = new URLSearchParams();
 
-  if (filters) {
-    if (filters.keyword) {
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(filters.keyword!.toLowerCase())
-      );
-    }
-    if (filters.size) {
-      filtered = filtered.filter((p) => p.size.includes(filters.size!));
-    }
-    if (filters.color) {
-      filtered = filtered.filter((p) =>
-        p.color.toLowerCase().includes(filters.color!.toLowerCase())
-      );
-    }
-    if (filters.minPrice) {
-      filtered = filtered.filter((p) => p.price >= filters.minPrice!);
-    }
-    if (filters.maxPrice) {
-      filtered = filtered.filter((p) => p.price <= filters.maxPrice!);
-    }
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case "newest":
-          filtered.sort((a, b) => new Date(b.createdAt || "").getTime() - new Date(a.createdAt || "").getTime());
-          break;
-        case "price_asc":
-          filtered.sort((a, b) => a.price - b.price);
-          break;
-        case "price_desc":
-          filtered.sort((a, b) => b.price - a.price);
-          break;
-        case "name":
-          filtered.sort((a, b) => a.name.localeCompare(b.name));
-          break;
-      }
-    }
+  // Map filters to API query parameters
+  if (filters?.name) { // Use filters.name for API query
+    params.append("name", filters.name);
   }
+  if (filters?.productSize) {
+    params.append("productSize", String(filters.productSize));
+  }
+  if (filters?.color) {
+    params.append("color", filters.color);
+  }
+  if (filters?.minPrice) {
+    params.append("minPrice", String(filters.minPrice));
+  }
+  if (filters?.maxPrice) {
+    params.append("maxPrice", String(filters.maxPrice));
+  }
+  if (filters?.sortType) {
+    params.append("sortType", filters.sortType);
+  }
+  params.append("page", String(filters?.page ?? 0)); // Default to 0
+  params.append("size", String(filters?.size ?? 10)); // Default to 10
 
-  return { data: filtered, success: true };
-  // Real API call:
-  // const params = new URLSearchParams(filters as Record<string, string>);
-  // return fetchApi<Product[]>(`${API_ENDPOINTS.PRODUCTS}?${params}`);
+  return fetchApi<ProductApiResponse>(`${API_ENDPOINTS.PRODUCTS}?${params.toString()}`);
 }
 
 export async function getProductById(id: number): Promise<ApiResponse<Product | null>> {
@@ -239,3 +219,4 @@ export async function deleteProduct(productId: number): Promise<ApiResponse<null
   //   method: "DELETE",
   // });
 }
+

@@ -2,13 +2,14 @@
 export interface Product {
   id: number;
   name: string;
-  price: number;
-  stock: number;
+  brand: string; // Added brand based on API response
+  description?: string; // Made optional based on API response
   color: string;
-  size: string[];
-  image: string;
-  description?: string;
-  createdAt?: string;
+  price: number;
+  // stock: number; // Removed as it's not in the API response
+  // size: string[]; // Removed as it's not in the API response
+  // image: string; // Removed as it's not in the API response
+  // createdAt?: string; // Removed as it's not in the API response
 }
 
 // Cart Types
@@ -49,12 +50,51 @@ export interface ApiResponse<T> {
   success: boolean;
 }
 
+// Pagination metadata from the backend API response
+export interface Pageable {
+  pageNumber: number;
+  pageSize: number;
+  sort: {
+    empty: boolean;
+    unsorted: boolean;
+    sorted: boolean;
+  };
+  offset: number;
+  unpaged: boolean;
+  paged: boolean;
+}
+
+export interface Sort {
+  empty: boolean;
+  unsorted: boolean;
+  sorted: boolean;
+}
+
+// Product API Response Type that includes pagination and product content
+export interface ProductApiResponse {
+  content: Product[];
+  pageable: Pageable;
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  first: boolean;
+  size: number;
+  number: number;
+  sort: Sort;
+  numberOfElements: number;
+  empty: boolean;
+}
+
+
 // Search/Filter Types
 export interface ProductFilters {
-  keyword?: string;
-  size?: string;
+  keyword?: string; // Changed from 'name' to 'keyword' as per curl example
+  name?: string; // Add name filter based on curl example
+  productSize?: number; // Add productSize filter based on curl example
   color?: string;
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: "newest" | "price_asc" | "price_desc" | "name";
+  sortType?: "LATEST" | "PRICE_ASC" | "PRICE_DESC" | "NAME_ASC"; // Changed from 'sortBy' and updated values based on curl example and typical backend enums
+  page?: number; // Added for pagination
+  size?: number; // Added for pagination
 }

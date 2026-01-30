@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/header";
 import { ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/lib/api";
-import type { Product } from "@/lib/types";
+import type { Product, ProductApiResponse } from "@/lib/types";
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -16,9 +16,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const response = await getProducts({ sortBy: "newest" });
-        if (response.success) {
-          setFeaturedProducts(response.data.slice(0, 4));
+        const response = await getProducts({ sortType: "LATEST" }); // Changed sortBy to sortType and "newest" to "LATEST"
+        if (response.success && response.data) { // Check response.data for null/undefined
+          setFeaturedProducts(response.data.content.slice(0, 4)); // Access response.data.content
         }
       } catch (error) {
         console.error("Failed to fetch featured products:", error);
