@@ -1,16 +1,18 @@
+
+export interface ProductOption {
+  size: number;
+  stock: number;
+}
 // Product Types
 export interface Product {
   id: number;
-  name: string;
-  brand: string; // Added brand based on API response
-  description?: string; // Made optional based on API response
+  name:string;
+  brand: string;
+  description?: string;
   color: string;
   price: number;
-  img: string; // Added img based on API response
-  // stock: number; // Removed as it's not in the API response
-  // size: string[]; // Removed as it's not in the API response
-  // image: string; // Removed as it's not in the API response
-  // createdAt?: string; // Removed as it's not in the API response
+  img: string;
+  options: ProductOption[];
 }
 
 // Cart Types

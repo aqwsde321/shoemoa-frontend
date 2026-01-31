@@ -27,8 +27,8 @@ export default function ProductDetailPage() {
         const response = await getProductById(Number(id));
         if (response.success && response.data) {
           setProduct(response.data);
-          if (response.data.size.length > 0) {
-            setSelectedSize(response.data.size[0]);
+          if (response.data.options.length > 0) {
+            setSelectedSize(String(response.data.options[0].size));
           }
         }
       } catch (error) {
@@ -109,6 +109,11 @@ export default function ProductDetailPage() {
     );
   }
 
+  const selectedOption = product.options.find(
+    (option) => String(option.size) === selectedSize
+  );
+  const currentStock = selectedOption ? selectedOption.stock : 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -127,7 +132,7 @@ export default function ProductDetailPage() {
           {/* Product Image */}
           <div className="aspect-square overflow-hidden rounded-lg bg-secondary">
             <img
-              src={product.image || "/placeholder.svg"}
+              src={product.img || "/placeholder.svg"}
               alt={product.name}
               className="h-full w-full object-cover object-center"
               crossOrigin="anonymous"
@@ -161,18 +166,18 @@ export default function ProductDetailPage() {
                   사이즈
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {product.size.map((size) => (
+                  {product.options.map((option) => (
                     <button
-                      key={size}
+                      key={option.size}
                       type="button"
-                      onClick={() => setSelectedSize(size)}
+                      onClick={() => setSelectedSize(String(option.size))}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                        selectedSize === size
+                        selectedSize === String(option.size)
                           ? "bg-foreground text-background"
                           : "bg-secondary text-foreground hover:bg-secondary/80"
                       }`}
                     >
-                      {size}
+                      {option.size}
                     </button>
                   ))}
                 </div>
@@ -198,13 +203,13 @@ export default function ProductDetailPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity(quantity + 1)}
-                    disabled={quantity >= product.stock}
+                    disabled={quantity >= currentStock}
                   >
                     <Plus className="h-4 w-4" />
                     <span className="sr-only">수량 증가</span>
                   </Button>
                   <span className="text-sm text-muted-foreground ml-2">
-                    재고 {product.stock}개
+                    재고 {currentStock}개
                   </span>
                 </div>
               </div>
@@ -215,7 +220,7 @@ export default function ProductDetailPage() {
               <Button
                 className="w-full h-12 gap-2"
                 onClick={handleAddToCart}
-                disabled={isAddingToCart || product.stock === 0}
+                disabled={isAddingToCart || currentStock === 0}
               >
                 {addedToCart ? (
                   <>
@@ -233,7 +238,7 @@ export default function ProductDetailPage() {
                 variant="outline"
                 className="w-full h-12 bg-transparent"
                 onClick={handleBuyNow}
-                disabled={isAddingToCart || product.stock === 0}
+                disabled={isAddingToCart || currentStock === 0}
               >
                 바로 구매
               </Button>

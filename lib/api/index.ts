@@ -95,10 +95,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
 }
 
 export async function getProductById(id: number): Promise<ApiResponse<Product | null>> {
-  const product = mockProducts.find((p) => p.id === id) || null;
-  return { data: product, success: true };
-  // Real API call:
-  // return fetchApi<Product>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
+  return fetchApi<Product>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
 }
 
 // ==================== Cart API ====================
