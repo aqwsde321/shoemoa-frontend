@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Minus, Plus, ShoppingBag, Check } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingBag, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { getProductById, addToCart } from "@/lib/api";
 import type { ProductDetail } from "@/lib/types";
+import useEmblaCarousel from 'embla-carousel-react'
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -22,6 +23,20 @@ export default function ProductDetailPage() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback((emblaApi: any) => {
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, []);
+
+  useEffect(() => {
+    if (emblaApi) emblaApi.on('select', onSelect);
+    return () => {
+      if (emblaApi) emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
   useEffect(() => {
     const fetchProduct = async () => {
       setIsLoading(true);
@@ -30,7 +45,6 @@ export default function ProductDetailPage() {
 
         if (response.success && response.data) {
           setProduct(response.data);
-          console.log("ProductDetailPage: Product images from API:", response.data.images); // Debugging images
           if (response.data.options && response.data.options.length > 0) { // Check if options exist
             setSelectedSize(String(response.data.options[0].size));
           }
@@ -138,15 +152,62 @@ export default function ProductDetailPage() {
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
-          {/* Product Image */}
-          <div className="aspect-square relative overflow-hidden rounded-lg bg-secondary">
-            <Image
-              src={product.images[0]?.imageUrl || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust as needed
-              style={{ objectFit: "cover" }}
-            />
+          {/* Product Image Carousel */}
+          <div className="relative">
+            <div className="overflow-hidden rounded-lg bg-secondary" ref={emblaRef}>
+              <div className="flex">
+                {product.images
+                  .slice() // Create a shallow copy to avoid modifying the original array
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((img, index) => (
+                    <div className="relative flex-none w-full aspect-square" key={img.imageUrl || index}>
+                      <Image
+                        src={img.imageUrl || "/placeholder.svg"}
+                        alt={product.name + " " + (index + 1)}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust as needed
+                        style={{ objectFit: "cover" }}
+                        priority={index === 0} // Prioritize loading the first image
+                      />
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Carousel Navigation */}
+            {product.images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 left-4 -translate-y-1/2 bg-background/50 hover:bg-background/70 rounded-full z-10"
+                  onClick={() => emblaApi && emblaApi.scrollPrev()}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  <span className="sr-only">이전 이미지</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 right-4 -translate-y-1/2 bg-background/50 hover:bg-background/70 rounded-full z-10"
+                  onClick={() => emblaApi && emblaApi.scrollNext()}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                  <span className="sr-only">다음 이미지</span>
+                </Button>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {product.images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`h-2 w-2 rounded-full ${
+                        index === selectedIndex ? 'bg-primary' : 'bg-gray-300'
+                      }`}
+                      onClick={() => emblaApi && emblaApi.scrollTo(index)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Product Info */}
