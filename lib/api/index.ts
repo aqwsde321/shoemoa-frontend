@@ -7,17 +7,25 @@ async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
+  const headers: HeadersInit = {
+    ...options?.headers,
+  };
+
+  // Only set Content-Type to application/json if the body is not FormData
+  if (!(options?.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
+      headers: headers,
       ...options,
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Improved error handling to read error message from response body
+      const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
@@ -66,6 +74,31 @@ export async function signup(email: string, password: string, name?: string): Pr
 }
 
 // ==================== Products API ====================
+export async function createProductWithImages(
+  productData: {
+    name: string;
+    brand: string;
+    description?: string;
+    color: string;
+    price: number;
+  },
+  images: FileList | null
+): Promise<ApiResponse<{ productId: number }>> {
+  const formData = new FormData();
+  formData.append("data", JSON.stringify(productData));
+
+  if (images) {
+    for (let i = 0; i < images.length; i++) {
+      formData.append("images", images[i]);
+    }
+  }
+
+  return fetchApi<{ productId: number }>(API_ENDPOINTS.PRODUCTS, {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function getProducts(filters?: ProductFilters): Promise<ApiResponse<ProductApiResponse>> {
   const params = new URLSearchParams();
 

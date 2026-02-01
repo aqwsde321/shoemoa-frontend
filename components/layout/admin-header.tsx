@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, Menu, X, LogOut } from "lucide-react";
+import { Package, Menu, X, LogOut, PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin", label: "상품 관리", icon: Package },
+  { href: "/admin/products/new", label: "새 상품 등록", icon: PlusCircle },
 ];
 
 export function AdminHeader() {
