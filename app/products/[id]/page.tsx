@@ -4,16 +4,18 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Check } from "lucide-react";
+import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { getProductById, addToCart } from "@/lib/api";
-import type { Product } from "@/lib/types";
+import type { ProductDetail } from "@/lib/types";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
+
+  const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -25,20 +27,27 @@ export default function ProductDetailPage() {
       setIsLoading(true);
       try {
         const response = await getProductById(Number(id));
+
         if (response.success && response.data) {
           setProduct(response.data);
-          if (response.data.options.length > 0) {
+          console.log("ProductDetailPage: Product images from API:", response.data.images); // Debugging images
+          if (response.data.options && response.data.options.length > 0) { // Check if options exist
             setSelectedSize(String(response.data.options[0].size));
           }
+        } else {
+          // If API call was successful but no data or success is false
+          console.error("ProductDetailPage: API returned no product or success was false.");
         }
       } catch (error) {
-        console.error("[v0] Failed to fetch product:", error);
+        console.error("ProductDetailPage: Failed to fetch product:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProduct();
-  }, [id]);
+    if (id) { // Ensure id is available before fetching
+      fetchProduct();
+    }
+  }, [id]); // Dependency array includes 'id'
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("ko-KR").format(price);
@@ -130,12 +139,13 @@ export default function ProductDetailPage() {
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
           {/* Product Image */}
-          <div className="aspect-square overflow-hidden rounded-lg bg-secondary">
-            <img
-              src={product.img || "/placeholder.svg"}
+          <div className="aspect-square relative overflow-hidden rounded-lg bg-secondary">
+            <Image
+              src={product.images[0]?.imageUrl || "/placeholder.svg"}
               alt={product.name}
-              className="h-full w-full object-cover object-center"
-              crossOrigin="anonymous"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust as needed
+              style={{ objectFit: "cover" }}
             />
           </div>
 

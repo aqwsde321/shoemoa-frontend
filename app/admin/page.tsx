@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getAdminProducts, deleteProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
+import Image from "next/image";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -54,8 +55,8 @@ export default function AdminProductsPage() {
     setIsLoading(true);
     try {
       const response = await getAdminProducts();
-      if (response.success) {
-        setProducts(response.data);
+      if (response.success && response.data) {
+        setProducts(response.data.content);
       }
     } catch (error) {
       console.error("[v0] Failed to fetch products:", error);
@@ -86,20 +87,18 @@ export default function AdminProductsPage() {
     <div className="bg-card rounded-lg border border-border p-4">
       <div className="flex gap-4">
         <div className="w-20 h-20 overflow-hidden rounded-md bg-secondary shrink-0">
-          <img
-            src={product.image || "/placeholder.svg"}
+          <Image
+            src={product.thumbnailUrl || "/placeholder.svg"}
             alt={product.name}
-            className="h-full w-full object-cover object-center"
-            crossOrigin="anonymous"
+            width={80}
+            height={80}
+            style={{ objectFit: "cover" }}
           />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium truncate">{product.name}</h3>
           <p className="text-sm text-muted-foreground">{product.color}</p>
           <p className="font-semibold mt-1">{formatPrice(product.price)}원</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            재고: {product.stock}개 | 사이즈: {product.size.join(", ")}
-          </p>
         </div>
       </div>
       <div className="flex gap-2 mt-4">
@@ -179,8 +178,6 @@ export default function AdminProductsPage() {
                     <TableHead>상품명</TableHead>
                     <TableHead>색상</TableHead>
                     <TableHead className="text-right">가격</TableHead>
-                    <TableHead className="text-right">재고</TableHead>
-                    <TableHead>사이즈</TableHead>
                     <TableHead className="w-[100px]">관리</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -189,11 +186,12 @@ export default function AdminProductsPage() {
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="w-12 h-12 overflow-hidden rounded bg-secondary">
-                          <img
-                            src={product.image || "/placeholder.svg"}
+                          <Image
+                            src={product.thumbnailUrl || "/placeholder.svg"}
                             alt={product.name}
-                            className="h-full w-full object-cover object-center"
-                            crossOrigin="anonymous"
+                            width={48}
+                            height={48}
+                            style={{ objectFit: "cover" }}
                           />
                         </div>
                       </TableCell>
@@ -201,13 +199,6 @@ export default function AdminProductsPage() {
                       <TableCell>{product.color}</TableCell>
                       <TableCell className="text-right">
                         {formatPrice(product.price)}원
-                      </TableCell>
-                      <TableCell className="text-right">{product.stock}</TableCell>
-                      <TableCell>
-                        <span className="text-xs text-muted-foreground">
-                          {product.size.slice(0, 3).join(", ")}
-                          {product.size.length > 3 && ` +${product.size.length - 3}`}
-                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">

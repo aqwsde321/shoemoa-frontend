@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from "./config";
-import type { Product, CartItem, Order, AuthResponse, ProductFilters, ApiResponse, ProductApiResponse } from "../types";
+import type { Product, ProductDetail, CartItem, Order, AuthResponse, ProductFilters, ApiResponse, ProductApiResponse } from "../types";
 import { mockProducts, mockCartItems } from "../mock-data";
 
 // Helper function for API calls
@@ -99,6 +99,28 @@ export async function createProductWithImages(
   });
 }
 
+export async function updateProductDetail(
+  productId: number,
+  productData: Omit<ProductDetail, "id" | "images" | "createdAt">, // Exclude id, images, createdAt from direct update via productData
+  newImages: FileList | null // For new images to be uploaded
+): Promise<ApiResponse<ProductDetail>> {
+  const formData = new FormData();
+  formData.append("data", JSON.stringify(productData));
+
+  if (newImages) {
+    for (let i = 0; i < newImages.length; i++) {
+      formData.append("images", newImages[i]);
+    }
+  }
+
+
+
+  return fetchApi<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${productId}`, {
+    method: "PUT",
+    body: formData,
+  });
+}
+
 export async function getProducts(filters?: ProductFilters): Promise<ApiResponse<ProductApiResponse>> {
   const params = new URLSearchParams();
 
@@ -127,8 +149,9 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
   return fetchApi<ProductApiResponse>(`${API_ENDPOINTS.PRODUCTS}?${params.toString()}`);
 }
 
-export async function getProductById(id: number): Promise<ApiResponse<Product | null>> {
-  return fetchApi<Product>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
+export async function getProductById(id: number): Promise<ApiResponse<ProductDetail | null>> {
+  // Real API call:
+  return fetchApi<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
 }
 
 // ==================== Cart API ====================
@@ -141,7 +164,7 @@ export async function getCart(): Promise<ApiResponse<CartItem[]>> {
 export async function addToCart(
   productId: number,
   quantity: number,
-  selectedSize: string,
+  selectedSize: string, // Re-introduce selectedSize
   selectedColor: string
 ): Promise<ApiResponse<CartItem>> {
   console.log("[v0] Add to cart:", { productId, quantity, selectedSize, selectedColor });
@@ -151,7 +174,7 @@ export async function addToCart(
     productId,
     product: product!,
     quantity,
-    selectedSize,
+    selectedSize, // Use selectedSize again
     selectedColor,
   };
   return { data: newItem, success: true, message: "장바구니에 추가되었습니다" };
@@ -206,39 +229,31 @@ export async function createOrder(cartItemIds: number[]): Promise<ApiResponse<Or
 }
 
 // ==================== Admin Products API ====================
-export async function getAdminProducts(): Promise<ApiResponse<Product[]>> {
-  return { data: mockProducts, success: true };
-  // Real API call:
-  // return fetchApi<Product[]>(API_ENDPOINTS.ADMIN_PRODUCTS);
-}
-
-export async function createProduct(product: Omit<Product, "id">): Promise<ApiResponse<Product>> {
-  console.log("[v0] Create product:", product);
-  const newProduct: Product = {
-    ...product,
-    id: Date.now(),
-    createdAt: new Date().toISOString(),
+export async function getAdminProducts(): Promise<ApiResponse<ProductApiResponse>> {
+  // Mock implementation for ProductApiResponse
+  const mockProductApiResponse: ProductApiResponse = {
+    content: mockProducts,
+    pageable: {
+      pageNumber: 0,
+      pageSize: 10,
+      sort: { empty: true, unsorted: true, sorted: false },
+      offset: 0,
+      unpaged: false,
+      paged: true,
+    },
+    last: true,
+    totalPages: 1,
+    totalElements: mockProducts.length,
+    first: true,
+    size: mockProducts.length,
+    number: 0,
+    sort: { empty: true, unsorted: true, sorted: false },
+    numberOfElements: mockProducts.length,
+    empty: false,
   };
-  return { data: newProduct, success: true, message: "상품이 등록되었습니다" };
+  return { data: mockProductApiResponse, success: true };
   // Real API call:
-  // return fetchApi<Product>(API_ENDPOINTS.ADMIN_PRODUCTS, {
-  //   method: "POST",
-  //   body: JSON.stringify(product),
-  // });
-}
-
-export async function updateProduct(
-  productId: number,
-  product: Partial<Product>
-): Promise<ApiResponse<Product>> {
-  console.log("[v0] Update product:", { productId, product });
-  const existing = mockProducts.find((p) => p.id === productId);
-  return { data: { ...existing!, ...product }, success: true, message: "상품이 수정되었습니다" };
-  // Real API call:
-  // return fetchApi<Product>(`${API_ENDPOINTS.ADMIN_PRODUCTS}/${productId}`, {
-  //   method: "PUT",
-  //   body: JSON.stringify(product),
-  // });
+  // return fetchApi<ProductApiResponse>(API_ENDPOINTS.ADMIN_PRODUCTS);
 }
 
 export async function deleteProduct(productId: number): Promise<ApiResponse<null>> {

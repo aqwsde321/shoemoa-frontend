@@ -4,6 +4,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    domains: ["d3to55zvtt5gof.cloudfront.net"],
     unoptimized: true,
   },
  

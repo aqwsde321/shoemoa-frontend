@@ -1,25 +1,46 @@
 
-export interface ProductOption {
-  size: number;
+export interface ProductOptionDetail {
+  size: number; // Corrected from string to number
   stock: number;
 }
-// Product Types
+
+export interface ProductImage {
+  id?: number; // Made optional as per user's JSON example
+  imageUrl: string;
+  sortOrder: number; // Added from user's JSON example
+  thumbnail: boolean; // Added from user's JSON example
+}
+
+// Product Types for List View
 export interface Product {
   id: number;
-  name:string;
+  name: string;
   brand: string;
   description?: string;
   color: string;
   price: number;
-  img: string;
-  options: ProductOption[];
+  thumbnailUrl: string; // Changed from 'img' to 'thumbnailUrl'
+  createdAt: string; // Assuming createdAt is still part of the list view product
+}
+
+// Product Detail Type
+export interface ProductDetail {
+  id: number; // Assuming ID is part of detail as well
+  name: string;
+  brand: string;
+  description?: string; // Re-adding description for detail view
+  color: string;
+  price: number;
+  options: ProductOptionDetail[]; // Using the new ProductOptionDetail
+  images: ProductImage[]; // Using the new ProductImage
+  createdAt: string; // Assuming createdAt is part of detail view
 }
 
 // Cart Types
 export interface CartItem {
   id: number;
   productId: number;
-  product: Product;
+  product: Product; // This now refers to the list view Product
   quantity: number;
   selectedSize: string;
   selectedColor: string;

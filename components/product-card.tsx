@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Product } from "@/lib/types";
+import Image from "next/image";
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("ko-KR").format(price);
@@ -16,11 +17,12 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/products/${product.id}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-secondary">
-        <img
-          src={product.img || "/placeholder.svg"} // Use product.img
+        <Image
+          src={product.thumbnailUrl || "/placeholder.svg"}
           alt={product.name}
-          className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-          // crossOrigin="anonymous" // Commented out as it might cause issues with external images
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust as needed
+          style={{ objectFit: "cover" }}
         />
         {/* Stock related logic - currently commented out as 'stock' is not in current API response */}
         {/*
