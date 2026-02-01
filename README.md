@@ -1,61 +1,88 @@
-# Shoemoa Frontend (UI Pages)
+# Shoemoa Frontend
 
-신발 쇼핑몰 사이드 프로젝트 **Shoemoa**의 프론트엔드 UI 레포지토리입니다.  
-Vercel v0를 통해 UI를 생성하고, Vercel로 배포됩니다.
+신발 쇼핑몰 사이드 프로젝트 **Shoemoa**의 프론트엔드 레포지토리입니다.  
+Next.js와 Vercel v0를 기반으로 UI를 구성했으며, Tailwind CSS와 shadcn/ui를 사용해 스타일링했습니다.
 
 ---
 
-## 🔗 Live Demo
+## 📖 Project Overview
 
-**Frontend URL**  
-👉 https://shoemoa-frontend-79l17mixy-aqwsde321s-projects.vercel.app/
+이 프로젝트는 사용자 및 관리자를 위한 전체 UI를 포함합니다.
+
+### 사용자 기능
+- 회원가입 / 로그인
+- 상품 목록 (검색, 정렬 기능 포함)
+- 상품 상세 정보 조회
+- 장바구니
+- 주문 페이지
+
+### 관리자 기능
+- 상품 대시보드
+- 상품 등록, 수정, 삭제
+- 반응형 UI 지원
 
 ---
 
 ## 🛠 Tech Stack
 
-- React (v0 generated)
-- Tailwind CSS
-- shadcn/ui
-- Vercel (Hosting)
-- Spring Boot REST API 연동 예정
+- **Framework**: Next.js (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Deployment**: Vercel
+- **API**: Spring Boot REST API (연동 예정)
 
 ---
 
-## 📦 Project Overview
+## 🚀 Getting Started
 
-이 프로젝트는 다음 화면을 포함합니다.
+### Prerequisites
+- Node.js (v18 or higher)
+- pnpm
 
-### 사용자 화면
-- 회원가입 / 로그인
-- 상품 목록 (검색 / 정렬)
-- 상품 상세
-- 장바구니
-- 주문
+### Installation
+```bash
+pnpm install
+```
 
-### 관리자 화면
-- 상품 목록 조회
-- 상품 등록 / 수정 / 삭제
-- 모바일 반응형 지원
-
-> 현재는 UI 중심으로 구성되어 있으며,  
-> 백엔드(Spring REST API) 연동은 단계적으로 진행 중입니다.
+### Run Development Server
+```bash
+pnpm run dev
+```
+애플리케이션은 `http://localhost:3000` 에서 실행됩니다.
 
 ---
 
-## 🚀 Deployment
+## 🗺️ Development Roadmap
 
-- **Hosting**: Vercel
-- **Project Dashboard**  
-  https://vercel.com/aqwsde321s-projects/shoemoa-frontend/GmUBnNvEeisMx8G3yjtBxuJBiFL9
-
-- `main` 브랜치에 push 시 자동 배포됩니다.
+- **[v]** UI/UX 프로토타입 구현 (v0)
+- **[ ]** 백엔드 API 연동
+    - `[ ]` 상품 목록/상세 조회 연동
+    - `[ ]` 회원 인증 (로그인/회원가입) 연동
+    - `[ ]` 장바구니 및 주문 기능 연동
+- **[ ]** 상태 관리 라이브러리 도입 (예: Zustand 또는 Recoil)
+- **[ ]** 테스트 코드 작성 (Jest, React Testing Library)
 
 ---
 
-## 🔧 Environment Variables
+## 🔌 API 연동
 
-API 주소는 환경변수로 관리합니다.
+백엔드 API 연동은 `lib/api` 디렉토리에서 관리합니다. API 기본 주소는 환경변수로 설정합니다.
 
 ```bash
-VITE_API_BASE_URL=https://api.your-domain.com
+# .env.local 파일 예시
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+**⚠️ 중요**  
+> 현재 백엔드 서버의 배포가 안정화되지 않았습니다.  
+> **따라서 실제 API 호출은 실패할 수 있으며, `lib/mock-data.ts`에 정의된 목(Mock) 데이터를 우선적으로 사용하고 있습니다.**  
+> 백엔드 개발이 완료되면 실제 API로 전환될 예정입니다.
+
+---
+
+## 📦 Deployment
+
+- **Hosting**: Vercel
+- **Project Dashboard**: [Vercel Dashboard](https://vercel.com/aqwsde321s-projects/shoemoa-frontend/GmUBnNvEeisMx8G3yjtBxuJBiFL9)
+- `main` 브랜치에 push 시 자동 배포가 트리거됩니다.
+- **Live Demo**: [https://shoemoa-frontend.vercel.app/](https://shoemoa-frontend.vercel.app/)
