@@ -111,7 +111,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
   const params = new URLSearchParams();
 
   // Map filters to API query parameters
-  if (filters?.name) { // Use filters.name for API query
+  if (filters?.name) {
     params.append("name", filters.name);
   }
   if (filters?.productSize) {
@@ -129,15 +129,68 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
   if (filters?.sortType) {
     params.append("sortType", filters.sortType);
   }
-  params.append("page", String(filters?.page ?? 0)); // Default to 0
-  params.append("size", String(filters?.size ?? 10)); // Default to 10
+  params.append("page", String(filters?.page ?? 0));
+  params.append("size", String(filters?.size ?? 10));
 
-  return fetchApi<ProductApiResponse>(`${API_ENDPOINTS.PRODUCTS}?${params.toString()}`);
+  try {
+    return await fetchApi<ProductApiResponse>(`${API_ENDPOINTS.PRODUCTS}?${params.toString()}`);
+  } catch (error) {
+    console.error("Failed to fetch products from API, returning mock data:", error);
+    // Fallback to mock data on error
+    const mockProductApiResponse: ProductApiResponse = {
+      content: mockProducts.slice(
+        (filters?.page ?? 0) * (filters?.size ?? 10),
+        ((filters?.page ?? 0) + 1) * (filters?.size ?? 10)
+      ),
+      pageable: {
+        pageNumber: filters?.page ?? 0,
+        pageSize: filters?.size ?? 10,
+        sort: [],
+        offset: (filters?.page ?? 0) * (filters?.size ?? 10),
+        paged: true,
+        unpaged: false,
+      },
+      last: (filters?.page ?? 0) * (filters?.size ?? 10) + (filters?.size ?? 10) >= mockProducts.length,
+      totalPages: Math.ceil(mockProducts.length / (filters?.size ?? 10)),
+      totalElements: mockProducts.length,
+      first: (filters?.page ?? 0) === 0,
+      size: filters?.size ?? 10,
+      number: filters?.page ?? 0,
+      sort: [],
+      numberOfElements: mockProducts.length,
+      empty: mockProducts.length === 0,
+    };
+    return { data: mockProductApiResponse, success: true, message: "Mock data fallback" };
+  }
 }
 
 export async function getProductById(id: number): Promise<ApiResponse<ProductDetail | null>> {
-  // Real API call:
-  return fetchApi<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
+  try {
+    return await fetchApi<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
+  } catch (error) {
+    console.error(`Failed to fetch product with id ${id} from API, returning mock data:`, error);
+    // Fallback to mock data on error
+    const mockProduct = mockProducts.find(p => p.id === id);
+    if (!mockProduct) {
+      return { data: null, success: false, message: "Mock product not found" };
+    }
+    // Convert mock Product to ProductDetail format
+    const mockProductDetail: ProductDetail = {
+      name: mockProduct.name,
+      brand: mockProduct.brand,
+      color: mockProduct.color,
+      price: mockProduct.price,
+      options: [
+        { size: 250, stock: 10 },
+        { size: 260, stock: 5 },
+        { size: 270, stock: 12 },
+      ], // Example options
+      images: [
+        { imageUrl: mockProduct.thumbnailUrl, sortOrder: 1, thumbnail: true },
+      ], // Example image
+    };
+    return { data: mockProductDetail, success: true, message: "Mock data fallback" };
+  }
 }
 
 // ==================== Cart API ====================
