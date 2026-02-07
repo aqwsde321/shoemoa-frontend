@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signup } from "@/lib/api";
+import { useAuth } from "@/lib/hooks/use-auth.tsx";
 
 const formSchema = z
   .object({
     email: z.string().email({ message: "유효한 이메일을 입력하세요." }),
-    name: z.string().min(2, { message: "이름은 2자 이상이어야 합니다." }),
     password: z.string().min(8, { message: "비밀번호는 8자 이상이어야 합니다." }),
     confirmPassword: z.string(),
   })
@@ -28,6 +28,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -35,7 +36,6 @@ export default function SignupPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      name: "",
       password: "",
       confirmPassword: "",
     },
@@ -48,16 +48,27 @@ export default function SignupPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      // The 'name' field might be ignored by the backend if not in the DTO, which is acceptable.
-      const response = await signup({ email: data.email, password: data.password, name: data.name });
-      if (response.success) {
-        console.log("[v0] Signup successful:", response.data);
-        router.push("/login");
+      const signupResponse = await signup({ email: data.email, password: data.password });
+      if (signupResponse.success) {
+        console.log("[v0] Signup successful, attempting to auto-login...");
+        const role = await login({ email: data.email, password: data.password });
+        if (role) {
+          if (role === "ADMIN") {
+            router.push("/admin");
+          } else {
+            router.push("/");
+          }
+        } else {
+          // If auto-login fails, redirect to login page for manual login.
+          form.setError("root", { message: "자동 로그인에 실패했습니다. 수동으로 로그인해주세요." });
+          router.push("/login");
+        }
       } else {
-        form.setError("root", { message: response.message || "회원가입에 실패했습니다." });
+        form.setError("root", { message: signupResponse.message || "회원가입에 실패했습니다." });
       }
-    } catch {
-      form.setError("root", { message: "회원가입 중 오류가 발생했습니다." });
+    } catch (error) {
+      console.error("Signup or auto-login process failed:", error);
+      form.setError("root", { message: "회원가입 또는 자동 로그인 중 오류가 발생했습니다." });
     }
   };
 
@@ -101,20 +112,6 @@ export default function SignupPage() {
                   className="h-12 bg-secondary border-0 focus-visible:ring-foreground"
                 />
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  이름
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="이름을 입력하세요"
-                  {...form.register("name")}
-                  className="h-12 bg-secondary border-0 focus-visible:ring-foreground"
-                />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
 
               <div className="space-y-2">

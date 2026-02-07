@@ -4,8 +4,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost
 // API Endpoints
 export const API_ENDPOINTS = {
   // Auth
-  LOGIN: "/api/auth/login",
-  SIGNUP: "/api/auth/signup",
+  LOGIN: "/api/members/login",
+  SIGNUP: "/api/members/signup",
 
   // Products (User)
   PRODUCTS: "/api/products",

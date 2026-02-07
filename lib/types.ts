@@ -127,7 +127,7 @@ export interface ProductFilters {
  */
 export interface LoginRequest {
   email: string;
-  password?: string; // v0 login form may omit password
+  password: string;
 }
 
 /**
@@ -136,8 +136,7 @@ export interface LoginRequest {
  */
 export interface SignupRequest {
   email: string;
-  password?: string; // v0 signup form may omit password
-  name?: string; // v0 signup form has a name field
+  password: string;
 }
 
 /**

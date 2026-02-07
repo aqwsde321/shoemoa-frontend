@@ -4,9 +4,11 @@ import Link from "next/link";
 import { ShoppingBag, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/hooks/use-auth.tsx"; // Import useAuth
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, userRole, logout } = useAuth(); // Use useAuth hook
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -26,6 +28,14 @@ export function Header() {
             >
               상품목록
             </Link>
+            {isAuthenticated && userRole === "ADMIN" && ( // Conditionally render Admin Dashboard link
+              <Link
+                href="/admin"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                관리자 대시보드
+              </Link>
+            )}
             <Link
               href="/cart"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -42,12 +52,19 @@ export function Header() {
                 <span className="sr-only">장바구니</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/login">
+            {isAuthenticated ? ( // Conditionally render Login/Logout button
+              <Button variant="ghost" size="icon" onClick={logout}>
                 <User className="h-5 w-5" />
-                <span className="sr-only">로그인</span>
-              </Link>
-            </Button>
+                <span className="sr-only">로그아웃</span>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/login">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">로그인</span>
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -74,6 +91,15 @@ export function Header() {
             >
               상품목록
             </Link>
+            {isAuthenticated && userRole === "ADMIN" && ( // Conditionally render Admin Dashboard link
+              <Link
+                href="/admin"
+                className="block text-sm font-medium py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                관리자 대시보드
+              </Link>
+            )}
             <Link
               href="/cart"
               className="block text-sm font-medium py-2"
@@ -81,13 +107,25 @@ export function Header() {
             >
               장바구니
             </Link>
-            <Link
-              href="/login"
-              className="block text-sm font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              로그인
-            </Link>
+            {isAuthenticated ? ( // Conditionally render Login/Logout button
+              <button
+                className="block text-sm font-medium py-2 w-full text-left"
+                onClick={() => {
+                  logout();
+                  setIsMenuOpen(false);
+                }}
+              >
+                로그아웃
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="block text-sm font-medium py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                로그인
+              </Link>
+            )}
           </div>
         </div>
       )}

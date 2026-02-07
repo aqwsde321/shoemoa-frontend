@@ -71,7 +71,8 @@ export async function createProductWithImages(
   images: FileList | null
 ): Promise<ApiResponse<{ productId: number }>> {
   const formData = new FormData();
-  formData.append("data", JSON.stringify(productData));
+  const productDataBlob = new Blob([JSON.stringify(productData)], { type: "application/json" });
+  formData.append("data", productDataBlob); // Append as Blob with explicit Content-Type
 
   if (images) {
     for (let i = 0; i < images.length; i++) {
@@ -145,7 +146,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
       pageable: {
         pageNumber: filters?.page ?? 0,
         pageSize: filters?.size ?? 10,
-        sort: [],
+        sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
         offset: (filters?.page ?? 0) * (filters?.size ?? 10),
         paged: true,
         unpaged: false,
@@ -156,7 +157,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
       first: (filters?.page ?? 0) === 0,
       size: filters?.size ?? 10,
       number: filters?.page ?? 0,
-      sort: [],
+      sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
       numberOfElements: mockProducts.length,
       empty: mockProducts.length === 0,
     };
@@ -275,7 +276,7 @@ export async function getAdminProducts(): Promise<ApiResponse<ProductApiResponse
     pageable: {
       pageNumber: 0,
       pageSize: 10,
-      sort: { empty: true, unsorted: true, sorted: false },
+      sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
       offset: 0,
       unpaged: false,
       paged: true,
@@ -286,7 +287,7 @@ export async function getAdminProducts(): Promise<ApiResponse<ProductApiResponse
     first: true,
     size: mockProducts.length,
     number: 0,
-    sort: { empty: true, unsorted: true, sorted: false },
+    sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
     numberOfElements: mockProducts.length,
     empty: false,
   };

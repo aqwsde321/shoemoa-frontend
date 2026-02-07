@@ -1,6 +1,7 @@
 // lib/auth-storage.ts
 
 const ACCESS_TOKEN_KEY = "accessToken";
+const USER_ROLE_KEY = "userRole"; // New constant for user role
 
 export const setAccessToken = (token: string) => {
   if (typeof window !== "undefined") {
@@ -18,7 +19,29 @@ export const getAccessToken = (): string | null => {
 export const removeAccessToken = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
+    removeUserRole(); // Also remove user role when token is removed
   }
+};
+
+// New functions for user role
+export const setUserRole = (role: string) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(USER_ROLE_KEY, role);
+  }
+};
+
+export const getUserRole = (): string | null => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem(USER_ROLE_KEY);
+  }
+  return null;
+};
+
+export const removeUserRole = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(USER_ROLE_KEY);
+  }
+  
 };
 
 /**
