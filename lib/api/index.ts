@@ -1,6 +1,8 @@
 import { API_BASE_URL, API_ENDPOINTS } from "./config";
-import type { Product, ProductDetail, CartItem, Order, AuthResponse, ProductFilters, ApiResponse, ProductApiResponse } from "../types";
+import type { Product, ProductDetail, CartItem, Order, LoginRequest, LoginResponse, SignupRequest, ProductFilters, ApiResponse, ProductApiResponse } from "../types";
 import { mockProducts, mockCartItems } from "../mock-data";
+
+import { getAccessToken } from "../auth-storage";
 
 // Helper function for API calls
 async function fetchApi<T>(
@@ -10,6 +12,12 @@ async function fetchApi<T>(
   const headers: HeadersInit = {
     ...options?.headers,
   };
+
+  // Add Authorization header if a token exists
+  const accessToken = getAccessToken();
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
 
   // Only set Content-Type to application/json if the body is not FormData
   if (!(options?.body instanceof FormData)) {
@@ -37,40 +45,18 @@ async function fetchApi<T>(
 }
 
 // ==================== Auth API ====================
-export async function login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
-  // Mock implementation
-  console.log("[v0] Login attempt:", email);
-  return {
-    data: {
-      user: { id: 1, email, name: "사용자" },
-      token: "mock-jwt-token",
-    },
-    success: true,
-    message: "로그인 성공",
-  };
-  // Real API call (uncomment when backend is ready):
-  // return fetchApi<AuthResponse>(API_ENDPOINTS.LOGIN, {
-  //   method: "POST",
-  //   body: JSON.stringify({ email, password }),
-  // });
+export async function login(loginData: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+  return fetchApi<LoginResponse>(API_ENDPOINTS.LOGIN, {
+    method: "POST",
+    body: JSON.stringify(loginData),
+  });
 }
 
-export async function signup(email: string, password: string, name?: string): Promise<ApiResponse<AuthResponse>> {
-  // Mock implementation
-  console.log("[v0] Signup attempt:", email);
-  return {
-    data: {
-      user: { id: 1, email, name: name || "새 사용자" },
-      token: "mock-jwt-token",
-    },
-    success: true,
-    message: "회원가입 성공",
-  };
-  // Real API call:
-  // return fetchApi<AuthResponse>(API_ENDPOINTS.SIGNUP, {
-  //   method: "POST",
-  //   body: JSON.stringify({ email, password, name }),
-  // });
+export async function signup(signupData: SignupRequest): Promise<ApiResponse<{[key: string]: string}>> {
+  return fetchApi<{[key: string]: string}>(API_ENDPOINTS.SIGNUP, {
+    method: "POST",
+    body: JSON.stringify(signupData),
+  });
 }
 
 // ==================== Products API ====================

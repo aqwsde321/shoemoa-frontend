@@ -48,7 +48,8 @@ export default function SignupPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await signup(data.email, data.password, data.name);
+      // The 'name' field might be ignored by the backend if not in the DTO, which is acceptable.
+      const response = await signup({ email: data.email, password: data.password, name: data.name });
       if (response.success) {
         console.log("[v0] Signup successful:", response.data);
         router.push("/login");

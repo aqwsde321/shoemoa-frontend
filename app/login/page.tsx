@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/lib/api";
+import { setAccessToken } from "@/lib/auth-storage";
 
 const formSchema = z.object({
   email: z.string().email({ message: "유효한 이메일을 입력하세요." }),
@@ -38,9 +39,9 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await login(data.email, data.password);
+      const response = await login({ email: data.email, password: data.password });
       if (response.success) {
-        // In a real app, save token to localStorage/cookies
+        setAccessToken(response.data.accessToken);
         console.log("[v0] Login successful:", response.data);
         router.push("/products");
       } else {

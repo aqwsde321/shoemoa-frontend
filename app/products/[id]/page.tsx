@@ -72,7 +72,7 @@ export default function ProductDetailPage() {
 
     setIsAddingToCart(true);
     try {
-      await addToCart(product.id, quantity, selectedSize, product.color);
+      await addToCart(Number(id), quantity, selectedSize, product.color);
       setAddedToCart(true);
       setTimeout(() => setAddedToCart(false), 2000);
     } catch (error) {
@@ -87,7 +87,7 @@ export default function ProductDetailPage() {
 
     setIsAddingToCart(true);
     try {
-      await addToCart(product.id, quantity, selectedSize, product.color);
+      await addToCart(Number(id), quantity, selectedSize, product.color);
       router.push("/cart");
     } catch (error) {
       console.error("[v0] Failed to add to cart:", error);
@@ -223,13 +223,6 @@ export default function ProductDetailPage() {
                   {formatPrice(product.price)}원
                 </p>
               </div>
-
-              {/* Description */}
-              {product.description && (
-                <p className="text-muted-foreground leading-relaxed">
-                  {product.description}
-                </p>
-              )}
 
               {/* Size Selection */}
               <div className="space-y-3">

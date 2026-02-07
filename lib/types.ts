@@ -1,124 +1,173 @@
+// OpenAPI Spec-based types
 
-export interface ProductOptionDetail {
-  size: number; // Corrected from string to number
-  stock: number;
-}
+// ==================== API Response Wrappers ====================
 
-export interface ProductImage {
-  id?: number; // Made optional as per user's JSON example
-  imageUrl: string;
-  sortOrder: number; // Added from user's JSON example
-  thumbnail: boolean; // Added from user's JSON example
-}
-
-// Product Types for List View
-export interface Product {
-  id: number;
-  name: string;
-  brand: string;
-  description?: string;
-  color: string;
-  price: number;
-  thumbnailUrl: string; // Changed from 'img' to 'thumbnailUrl'
-  createdAt: string; // Assuming createdAt is still part of the list view product
-}
-
-// Product Detail Type
-export interface ProductDetail {
-  id: number; // Assuming ID is part of detail as well
-  name: string;
-  brand: string;
-  description?: string; // Re-adding description for detail view
-  color: string;
-  price: number;
-  options: ProductOptionDetail[]; // Using the new ProductOptionDetail
-  images: ProductImage[]; // Using the new ProductImage
-  createdAt: string; // Assuming createdAt is part of detail view
-}
-
-// Cart Types
-export interface CartItem {
-  id: number;
-  productId: number;
-  product: Product; // This now refers to the list view Product
-  quantity: number;
-  selectedSize: string;
-  selectedColor: string;
-}
-
-// Order Types
-export interface Order {
-  id: number;
-  items: CartItem[];
-  totalAmount: number;
-  status: "pending" | "confirmed" | "shipped" | "delivered";
-  createdAt: string;
-}
-
-// Auth Types
-export interface User {
-  id: number;
-  email: string;
-  name?: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
-// API Response Types
+/**
+ * Generic API response wrapper used by the fetchApi helper.
+ */
 export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
 }
 
-// Pagination metadata from the backend API response
-export interface Pageable {
+/**
+ * Pagination and sorting details from the backend.
+ * Based on Spring Pageable object.
+ */
+export interface PageableObject {
+  offset: number;
+  sort: SortObject[];
   pageNumber: number;
   pageSize: number;
-  sort: {
-    empty: boolean;
-    unsorted: boolean;
-    sorted: boolean;
-  };
-  offset: number;
-  unpaged: boolean;
   paged: boolean;
+  unpaged: boolean;
 }
 
-export interface Sort {
-  empty: boolean;
-  unsorted: boolean;
-  sorted: boolean;
+/**
+ * Sorting details for a specific field.
+ */
+export interface SortObject {
+  direction: string;
+  nullHandling: string;
+  ascending: boolean;
+  property: string;
+  ignoreCase: boolean;
 }
 
-// Product API Response Type that includes pagination and product content
+
+// ==================== Product Types ====================
+
+/**
+ * Represents a product in a search result list.
+ * Based on Spec: ProductSearchResult
+ */
+export interface Product {
+  id: number;
+  name: string;
+  brand: string;
+  description: string;
+  color: string;
+  price: number;
+  thumbnailUrl: string;
+  createdAt: string; // Assuming format is "YYYY-MM-DDTHH:mm:ss"
+}
+
+/**
+ * Detailed information for a single product.
+ * Based on Spec: ProductDetailDto
+ */
+export interface ProductDetail {
+  name: string;
+  brand: string;
+  color: string;
+  price: number;
+  options: ProductOptionDetail[];
+  images: ProductImage[];
+}
+
+/**
+ * Image details for a product.
+ * Based on Spec: ProductImageDto
+ */
+export interface ProductImage {
+  imageUrl: string;
+  sortOrder: number;
+  thumbnail: boolean;
+}
+
+/**
+ * Size and stock information for a product option.
+ * Based on Spec: ProductOptionDetailDto
+ */
+export interface ProductOptionDetail {
+  size: number;
+  stock: number;
+}
+
+/**
+ * The structure of the API response for a product search query.
+ * Based on Spec: PageProductSearchResult
+ */
 export interface ProductApiResponse {
-  content: Product[];
-  pageable: Pageable;
-  last: boolean;
   totalPages: number;
   totalElements: number;
   first: boolean;
+  last: boolean;
   size: number;
+  content: Product[];
   number: number;
-  sort: Sort;
+  sort: SortObject[];
+  pageable: PageableObject;
   numberOfElements: number;
   empty: boolean;
 }
 
-
-// Search/Filter Types
+/**
+ * Filters for searching products.
+ * Based on Spec: ProductSearchCond & Pageable
+ */
 export interface ProductFilters {
-  keyword?: string; // Changed from 'name' to 'keyword' as per curl example
-  name?: string; // Add name filter based on curl example
-  productSize?: number; // Add productSize filter based on curl example
+  name?: string;
+  productSize?: number;
   color?: string;
   minPrice?: number;
   maxPrice?: number;
-  sortType?: "LATEST" | "PRICE_ASC" | "PRICE_DESC" | "NAME_ASC"; // Changed from 'sortBy' and updated values based on curl example and typical backend enums
-  page?: number; // Added for pagination
-  size?: number; // Added for pagination
+  sortType?: "LATEST" | "PRICE_ASC" | "PRICE_DESC" | "NAME_ASC";
+  page?: number;
+  size?: number;
+}
+
+
+// ==================== Auth Types ====================
+
+/**
+ * Request body for user login.
+ * Based on Spec: LoginRequestDto
+ */
+export interface LoginRequest {
+  email: string;
+  password?: string; // v0 login form may omit password
+}
+
+/**
+ * Request body for user signup.
+ * Based on Spec: SignupRequestDto
+ */
+export interface SignupRequest {
+  email: string;
+  password?: string; // v0 signup form may omit password
+  name?: string; // v0 signup form has a name field
+}
+
+/**
+ * API response for a successful login.
+ * Based on Spec: LoginResponseDto
+ */
+export interface LoginResponse {
+  accessToken: string;
+  email: string;
+  role: string;
+}
+
+
+// ==================== Cart & Order Types (Legacy, to be reviewed) ====================
+// These types are based on the old mock data and may need updates
+// once the cart/order APIs are defined in the spec.
+
+export interface CartItem {
+  id: number;
+  productId: number;
+  product: Product;
+  quantity: number;
+  selectedSize: string;
+  selectedColor: string;
+}
+
+export interface Order {
+  id: number;
+  items: CartItem[];
+  totalAmount: number;
+  status: "pending" | "confirmed" | "shipped" | "delivered";
+  createdAt: string;
 }
