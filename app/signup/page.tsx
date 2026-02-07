@@ -11,12 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signup } from "@/lib/api";
-import { useAuth } from "@/lib/hooks/use-auth.tsx";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 const formSchema = z
   .object({
     email: z.string().email({ message: "유효한 이메일을 입력하세요." }),
-    password: z.string().min(8, { message: "비밀번호는 8자 이상이어야 합니다." }),
+    password: z
+      .string()
+      .min(8, { message: "비밀번호는 8자 이상이어야 합니다." }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -31,7 +33,7 @@ export default function SignupPage() {
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,10 +50,16 @@ export default function SignupPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const signupResponse = await signup({ email: data.email, password: data.password });
+      const signupResponse = await signup({
+        email: data.email,
+        password: data.password,
+      });
       if (signupResponse.success) {
         console.log("[v0] Signup successful, attempting to auto-login...");
-        const role = await login({ email: data.email, password: data.password });
+        const role = await login({
+          email: data.email,
+          password: data.password,
+        });
         if (role) {
           if (role === "ADMIN") {
             router.push("/admin");
@@ -60,15 +68,21 @@ export default function SignupPage() {
           }
         } else {
           // If auto-login fails, redirect to login page for manual login.
-          form.setError("root", { message: "자동 로그인에 실패했습니다. 수동으로 로그인해주세요." });
+          form.setError("root", {
+            message: "자동 로그인에 실패했습니다. 수동으로 로그인해주세요.",
+          });
           router.push("/login");
         }
       } else {
-        form.setError("root", { message: signupResponse.message || "회원가입에 실패했습니다." });
+        form.setError("root", {
+          message: signupResponse.message || "회원가입에 실패했습니다.",
+        });
       }
     } catch (error) {
       console.error("Signup or auto-login process failed:", error);
-      form.setError("root", { message: "회원가입 또는 자동 로그인 중 오류가 발생했습니다." });
+      form.setError("root", {
+        message: "회원가입 또는 자동 로그인 중 오류가 발생했습니다.",
+      });
     }
   };
 
@@ -101,7 +115,10 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Label
+                  htmlFor="email"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
                   이메일
                 </Label>
                 <Input
@@ -111,11 +128,18 @@ export default function SignupPage() {
                   {...form.register("email")}
                   className="h-12 bg-secondary border-0 focus-visible:ring-foreground"
                 />
-                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+                {errors.email && (
+                  <p className="text-sm text-destructive">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Label
+                  htmlFor="password"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
                   비밀번호
                 </Label>
                 <div className="relative">
@@ -133,15 +157,28 @@ export default function SignupPage() {
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    <span className="sr-only">{showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}</span>
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                    <span className="sr-only">
+                      {showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                    </span>
                   </Button>
                 </div>
-                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+                {errors.password && (
+                  <p className="text-sm text-destructive">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
                   비밀번호 확인
                 </Label>
                 <div className="relative">
@@ -159,16 +196,30 @@ export default function SignupPage() {
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    <span className="sr-only">{showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 보기"}</span>
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                    <span className="sr-only">
+                      {showConfirmPassword
+                        ? "비밀번호 숨기기"
+                        : "비밀번호 보기"}
+                    </span>
                   </Button>
                 </div>
-                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+                {errors.confirmPassword && (
+                  <p className="text-sm text-destructive">
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
               </div>
             </div>
 
             {errors.root && (
-              <p className="text-sm text-destructive text-center">{errors.root.message}</p>
+              <p className="text-sm text-destructive text-center">
+                {errors.root.message}
+              </p>
             )}
 
             <Button
@@ -183,7 +234,10 @@ export default function SignupPage() {
           {/* Login Link */}
           <p className="text-center text-sm text-muted-foreground">
             이미 계정이 있으신가요?{" "}
-            <Link href="/login" className="font-medium text-foreground hover:underline">
+            <Link
+              href="/login"
+              className="font-medium text-foreground hover:underline"
+            >
               로그인
             </Link>
           </p>

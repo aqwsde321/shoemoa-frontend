@@ -37,18 +37,33 @@ Next.js와 Vercel v0를 기반으로 UI를 구성했으며, Tailwind CSS와 shad
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- pnpm
+- yarn
 
 ### Installation
 ```bash
-pnpm install
+yarn install
 ```
 
 ### Run Development Server
 ```bash
-pnpm run dev
+yarn dev
 ```
 애플리케이션은 `http://localhost:3000` 에서 실행됩니다.
+
+### Production Build
+```bash
+yarn build
+```
+
+### Start Production Server
+```bash
+yarn start
+```
+
+### Linting
+```bash
+yarn lint
+```
 
 ---
 
