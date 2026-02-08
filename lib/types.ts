@@ -145,8 +145,18 @@ export interface SignupRequest {
  */
 export interface LoginResponse {
   accessToken: string;
+  refreshToken: string;
   email: string;
   role: string;
+}
+
+/**
+ * API response for a successful token reissue.
+ * Based on Spec: TokenResponseDto
+ */
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
 }
 
 

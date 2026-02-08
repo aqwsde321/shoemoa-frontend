@@ -1,11 +1,23 @@
 import { API_BASE_URL, API_ENDPOINTS } from "./config";
-import type { Product, ProductDetail, CartItem, Order, LoginRequest, LoginResponse, SignupRequest, ProductFilters, ApiResponse, ProductApiResponse } from "../types";
+import type {
+  Product,
+  ProductDetail,
+  CartItem,
+  Order,
+  LoginRequest,
+  LoginResponse,
+  SignupRequest,
+  ProductFilters,
+  ApiResponse,
+  ProductApiResponse,
+  TokenResponse,
+} from "../types";
 import { mockProducts, mockCartItems } from "../mock-data";
 
 import { getAccessToken } from "../auth-storage";
 
 // Helper function for API calls
-async function fetchApi<T>(
+export async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
@@ -13,13 +25,11 @@ async function fetchApi<T>(
     ...options?.headers,
   };
 
-  // Add Authorization header if a token exists
   const accessToken = getAccessToken();
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  // Only set Content-Type to application/json if the body is not FormData
   if (!(options?.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
@@ -31,9 +41,14 @@ async function fetchApi<T>(
     });
 
     if (!response.ok) {
-      // Improved error handling to read error message from response body
-      const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+      const errorCode = errorData?.code;
+
+      const error = new Error(errorMessage) as any;
+      error.status = response.status;
+      error.code = errorCode;
+      throw error;
     }
 
     const data = await response.json();
@@ -59,8 +74,15 @@ export async function signup(signupData: SignupRequest): Promise<ApiResponse<{[k
   });
 }
 
+export async function reissueToken(): Promise<ApiResponse<TokenResponse>> {
+  return fetchApi<TokenResponse>(API_ENDPOINTS.REISSUE, {
+    method: "POST",
+  });
+}
+
 // ==================== Products API ====================
 export async function createProductWithImages(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
   productData: {
     name: string;
     brand: string;
@@ -72,7 +94,7 @@ export async function createProductWithImages(
 ): Promise<ApiResponse<{ productId: number }>> {
   const formData = new FormData();
   const productDataBlob = new Blob([JSON.stringify(productData)], { type: "application/json" });
-  formData.append("data", productDataBlob); // Append as Blob with explicit Content-Type
+  formData.append("data", productDataBlob);
 
   if (images) {
     for (let i = 0; i < images.length; i++) {
@@ -80,16 +102,17 @@ export async function createProductWithImages(
     }
   }
 
-  return fetchApi<{ productId: number }>(API_ENDPOINTS.PRODUCTS, {
+  return authenticatedFetch<{ productId: number }>(API_ENDPOINTS.PRODUCTS, {
     method: "POST",
     body: formData,
   });
 }
 
 export async function updateProductDetail(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
   productId: number,
-  productData: Omit<ProductDetail, "id" | "images" | "createdAt">, // Exclude id, images, createdAt from direct update via productData
-  newImages: FileList | null // For new images to be uploaded
+  productData: Omit<ProductDetail, "id" | "images" | "createdAt">,
+  newImages: FileList | null
 ): Promise<ApiResponse<ProductDetail>> {
   const formData = new FormData();
   formData.append("data", JSON.stringify(productData));
@@ -100,9 +123,7 @@ export async function updateProductDetail(
     }
   }
 
-
-
-  return fetchApi<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${productId}`, {
+  return authenticatedFetch<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${productId}`, {
     method: "PUT",
     body: formData,
   });
@@ -111,29 +132,17 @@ export async function updateProductDetail(
 export async function getProducts(filters?: ProductFilters): Promise<ApiResponse<ProductApiResponse>> {
   const params = new URLSearchParams();
 
-  // Map filters to API query parameters
-  if (filters?.name) {
-    params.append("name", filters.name);
-  }
-  if (filters?.productSize) {
-    params.append("productSize", String(filters.productSize));
-  }
-  if (filters?.color) {
-    params.append("color", filters.color);
-  }
-  if (filters?.minPrice) {
-    params.append("minPrice", String(filters.minPrice));
-  }
-  if (filters?.maxPrice) {
-    params.append("maxPrice", String(filters.maxPrice));
-  }
-  if (filters?.sortType) {
-    params.append("sortType", filters.sortType);
-  }
+  if (filters?.name) params.append("name", filters.name);
+  if (filters?.productSize) params.append("productSize", String(filters.productSize));
+  if (filters?.color) params.append("color", filters.color);
+  if (filters?.minPrice) params.append("minPrice", String(filters.minPrice));
+  if (filters?.maxPrice) params.append("maxPrice", String(filters.maxPrice));
+  if (filters?.sortType) params.append("sortType", filters.sortType);
   params.append("page", String(filters?.page ?? 0));
   params.append("size", String(filters?.size ?? 10));
 
   try {
+    // getProducts is a public API, so it uses fetchApi directly.
     return await fetchApi<ProductApiResponse>(`${API_ENDPOINTS.PRODUCTS}?${params.toString()}`);
   } catch (error) {
     console.error("Failed to fetch products from API, returning mock data:", error);
@@ -146,7 +155,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
       pageable: {
         pageNumber: filters?.page ?? 0,
         pageSize: filters?.size ?? 10,
-        sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
+        sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
         offset: (filters?.page ?? 0) * (filters?.size ?? 10),
         paged: true,
         unpaged: false,
@@ -157,7 +166,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
       first: (filters?.page ?? 0) === 0,
       size: filters?.size ?? 10,
       number: filters?.page ?? 0,
-      sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
+      sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
       numberOfElements: mockProducts.length,
       empty: mockProducts.length === 0,
     };
@@ -167,6 +176,7 @@ export async function getProducts(filters?: ProductFilters): Promise<ApiResponse
 
 export async function getProductById(id: number): Promise<ApiResponse<ProductDetail | null>> {
   try {
+    // getProductById is a public API, so it uses fetchApi directly.
     return await fetchApi<ProductDetail>(`${API_ENDPOINTS.PRODUCTS}/${id}`);
   } catch (error) {
     console.error(`Failed to fetch product with id ${id} from API, returning mock data:`, error);
@@ -175,82 +185,77 @@ export async function getProductById(id: number): Promise<ApiResponse<ProductDet
     if (!mockProduct) {
       return { data: null, success: false, message: "Mock product not found" };
     }
-    // Convert mock Product to ProductDetail format
     const mockProductDetail: ProductDetail = {
       name: mockProduct.name,
       brand: mockProduct.brand,
       color: mockProduct.color,
       price: mockProduct.price,
-      options: [
-        { size: 250, stock: 10 },
-        { size: 260, stock: 5 },
-        { size: 270, stock: 12 },
-      ], // Example options
-      images: [
-        { imageUrl: mockProduct.thumbnailUrl, sortOrder: 1, thumbnail: true },
-      ], // Example image
+      options: [{ size: 250, stock: 10 }, { size: 260, stock: 5 }, { size: 270, stock: 12 }],
+      images: [{ imageUrl: mockProduct.thumbnailUrl, sortOrder: 1, thumbnail: true }],
     };
     return { data: mockProductDetail, success: true, message: "Mock data fallback" };
   }
 }
 
 // ==================== Cart API ====================
-export async function getCart(): Promise<ApiResponse<CartItem[]>> {
+export async function getCart(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>
+): Promise<ApiResponse<CartItem[]>> {
   return { data: mockCartItems, success: true };
-  // Real API call:
-  // return fetchApi<CartItem[]>(API_ENDPOINTS.CART);
+  // return authenticatedFetch<CartItem[]>(API_ENDPOINTS.CART);
 }
 
 export async function addToCart(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
   productId: number,
   quantity: number,
-  selectedSize: string, // Re-introduce selectedSize
+  selectedSize: string,
   selectedColor: string
 ): Promise<ApiResponse<CartItem>> {
-  console.log("[v0] Add to cart:", { productId, quantity, selectedSize, selectedColor });
   const product = mockProducts.find((p) => p.id === productId);
   const newItem: CartItem = {
     id: Date.now(),
     productId,
     product: product!,
     quantity,
-    selectedSize, // Use selectedSize again
+    selectedSize,
     selectedColor,
   };
   return { data: newItem, success: true, message: "장바구니에 추가되었습니다" };
-  // Real API call:
-  // return fetchApi<CartItem>(API_ENDPOINTS.CART, {
+  // return authenticatedFetch<CartItem>(API_ENDPOINTS.CART, {
   //   method: "POST",
   //   body: JSON.stringify({ productId, quantity, selectedSize, selectedColor }),
   // });
 }
 
 export async function updateCartItem(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
   cartItemId: number,
   quantity: number
 ): Promise<ApiResponse<CartItem>> {
-  console.log("[v0] Update cart item:", { cartItemId, quantity });
   const item = mockCartItems.find((i) => i.id === cartItemId);
   return { data: { ...item!, quantity }, success: true };
-  // Real API call:
-  // return fetchApi<CartItem>(`${API_ENDPOINTS.CART}/${cartItemId}`, {
+  // return authenticatedFetch<CartItem>(`${API_ENDPOINTS.CART}/${cartItemId}`, {
   //   method: "PUT",
   //   body: JSON.stringify({ quantity }),
   // });
 }
 
-export async function removeFromCart(cartItemId: number): Promise<ApiResponse<null>> {
-  console.log("[v0] Remove from cart:", cartItemId);
+export async function removeFromCart(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
+  cartItemId: number
+): Promise<ApiResponse<null>> {
   return { data: null, success: true, message: "장바구니에서 삭제되었습니다" };
-  // Real API call:
-  // return fetchApi<null>(`${API_ENDPOINTS.CART}/${cartItemId}`, {
+  // return authenticatedFetch<null>(`${API_ENDPOINTS.CART}/${cartItemId}`, {
   //   method: "DELETE",
   // });
 }
 
 // ==================== Orders API ====================
-export async function createOrder(cartItemIds: number[]): Promise<ApiResponse<Order>> {
-  console.log("[v0] Create order:", cartItemIds);
+export async function createOrder(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
+  cartItemIds: number[]
+): Promise<ApiResponse<Order>> {
   const items = mockCartItems.filter((i) => cartItemIds.includes(i.id));
   const totalAmount = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
   const order: Order = {
@@ -261,25 +266,26 @@ export async function createOrder(cartItemIds: number[]): Promise<ApiResponse<Or
     createdAt: new Date().toISOString(),
   };
   return { data: order, success: true, message: "주문이 완료되었습니다" };
-  // Real API call:
-  // return fetchApi<Order>(API_ENDPOINTS.ORDERS, {
+  // return authenticatedFetch<Order>(API_ENDPOINTS.ORDERS, {
   //   method: "POST",
   //   body: JSON.stringify({ cartItemIds }),
   // });
 }
 
 // ==================== Admin Products API ====================
-export async function getAdminProducts(): Promise<ApiResponse<ProductApiResponse>> {
-  // Mock implementation for ProductApiResponse
+export async function getAdminProducts(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>
+): Promise<ApiResponse<ProductApiResponse>> {
+  // return authenticatedFetch<ProductApiResponse>(API_ENDPOINTS.ADMIN_PRODUCTS);
   const mockProductApiResponse: ProductApiResponse = {
     content: mockProducts,
     pageable: {
       pageNumber: 0,
       pageSize: 10,
-      sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
+      sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
       offset: 0,
-      unpaged: false,
       paged: true,
+      unpaged: false,
     },
     last: true,
     totalPages: 1,
@@ -287,21 +293,21 @@ export async function getAdminProducts(): Promise<ApiResponse<ProductApiResponse
     first: true,
     size: mockProducts.length,
     number: 0,
-    sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }], // Fix type mismatch
+    sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
     numberOfElements: mockProducts.length,
     empty: false,
   };
   return { data: mockProductApiResponse, success: true };
-  // Real API call:
-  // return fetchApi<ProductApiResponse>(API_ENDPOINTS.ADMIN_PRODUCTS);
 }
 
-export async function deleteProduct(productId: number): Promise<ApiResponse<null>> {
-  console.log("[v0] Delete product:", productId);
+export async function deleteProduct(
+  authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
+  productId: number
+): Promise<ApiResponse<null>> {
   return { data: null, success: true, message: "상품이 삭제되었습니다" };
-  // Real API call:
-  // return fetchApi<null>(`${API_ENDPOINTS.ADMIN_PRODUCTS}/${productId}`, {
+  // return authenticatedFetch<null>(`${API_ENDPOINTS.ADMIN_PRODUCTS}/${productId}`, {
   //   method: "DELETE",
   // });
 }
+
 

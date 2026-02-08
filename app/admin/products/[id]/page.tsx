@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react"
-
-import { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, X, PlusCircle } from "lucide-react";
@@ -14,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getProductById, createProductWithImages, updateProductDetail } from "@/lib/api";
 import type { ProductDetail, ProductOptionDetail, ProductImage } from "@/lib/types";
 import { AVAILABLE_SIZES, AVAILABLE_COLORS } from "@/lib/mock-data";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export default function AdminProductFormPage({
   params,
@@ -22,6 +21,7 @@ export default function AdminProductFormPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { authenticatedFetch } = useAuth();
   const isNew = id === "new";
 
   const [isLoading, setIsLoading] = useState(!isNew);
@@ -37,10 +37,9 @@ export default function AdminProductFormPage({
   const [productOptions, setProductOptions] = useState<ProductOptionDetail[]>([]);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [selectedFilesToUpload, setSelectedFilesToUpload] = useState<FileList | null>(null);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]); // For new image previews
-  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for new image file input
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cleanup object URLs when component unmounts or selectedFilesToUpload changes
   useEffect(() => {
     return () => {
       imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
@@ -51,8 +50,6 @@ export default function AdminProductFormPage({
     if (e.target.files) {
       const files = e.target.files;
       setSelectedFilesToUpload(files);
-
-      // Generate previews for newly selected files
       const newPreviews = Array.from(files).map((file) => URL.createObjectURL(file));
       setImagePreviews(newPreviews);
     } else {
@@ -60,7 +57,6 @@ export default function AdminProductFormPage({
       setImagePreviews([]);
     }
   };
-
 
   useEffect(() => {
     if (!isNew) {
@@ -83,13 +79,7 @@ export default function AdminProductFormPage({
       };
       fetchProduct();
     } else {
-      setFormData({
-        name: "",
-        brand: "",
-        description: "",
-        color: "",
-        price: 0,
-      });
+      setFormData({ name: "", brand: "", description: "", color: "", price: 0 });
       setProductOptions([]);
       setProductImages([]);
       setSelectedFilesToUpload(null);
@@ -106,7 +96,6 @@ export default function AdminProductFormPage({
 
   const handleOptionChange = (index: number, key: keyof ProductOptionDetail, value: string | number) => {
     const updatedOptions = [...productOptions];
-    // Ensure size and stock are numbers
     if (key === "stock" || key === "size") {
       updatedOptions[index] = { ...updatedOptions[index], [key]: Number(value) };
     } else {
@@ -137,7 +126,7 @@ export default function AdminProductFormPage({
 
     try {
       if (isNew) {
-        const result = await createProductWithImages(formData, selectedFilesToUpload);
+        const result = await createProductWithImages(authenticatedFetch, formData, selectedFilesToUpload);
         if (result.success) {
           alert("상품이 성공적으로 등록되었습니다.");
           router.push("/admin");
@@ -145,15 +134,8 @@ export default function AdminProductFormPage({
           setError(result.message || "상품 등록에 실패했습니다.");
         }
       } else {
-        // For existing products, `productImages` state holds existing images.
-        // `selectedFilesToUpload` holds new files to be added.
-        // For simplicity, we assume new files are appended. If existing images need to be deleted,
-        // a more complex UI and backend API would be required (e.g., passing image IDs to delete).
-        const productDetailForUpdate = {
-          ...formData,
-          options: productOptions,
-        };
-        const result = await updateProductDetail(Number(id), productDetailForUpdate, selectedFilesToUpload);
+        const productDetailForUpdate = { ...formData, options: productOptions };
+        const result = await updateProductDetail(authenticatedFetch, Number(id), productDetailForUpdate, selectedFilesToUpload);
         if (result.success) {
           alert("상품이 성공적으로 수정되었습니다.");
           router.push("/admin");
@@ -193,7 +175,6 @@ export default function AdminProductFormPage({
       <AdminHeader />
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
         <Link
           href="/admin"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -207,7 +188,6 @@ export default function AdminProductFormPage({
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Product Name */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               상품명 *
@@ -222,7 +202,6 @@ export default function AdminProductFormPage({
             />
           </div>
 
-          {/* Product Brand */}
           <div className="space-y-2">
             <Label htmlFor="brand" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               브랜드 *
@@ -237,7 +216,6 @@ export default function AdminProductFormPage({
             />
           </div>
 
-          {/* Product Price */}
           <div className="space-y-2">
             <Label htmlFor="price" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               가격 (원) *
@@ -254,7 +232,6 @@ export default function AdminProductFormPage({
             />
           </div>
 
-          {/* Color */}
           <div className="space-y-2">
             <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               색상 *
@@ -277,7 +254,6 @@ export default function AdminProductFormPage({
             </div>
           </div>
 
-          {/* Product Options (Size and Stock) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -326,23 +302,20 @@ export default function AdminProductFormPage({
             ))}
           </div>
 
-          {/* Product Images */}
           <div className="space-y-2">
             <Label htmlFor="images" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               상품 이미지
             </Label>
-            {/* Display existing images */}
             {productImages.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mt-2">
-                {productImages.map((img) => (
-                  <div key={img.id} className="relative w-full h-24 rounded-md overflow-hidden border border-gray-200">
+                {/* ProductImage a `id` property, so we can use that as a key. */}
+                {productImages.map((img, index) => (
+                  <div key={index} className="relative w-full h-24 rounded-md overflow-hidden border border-gray-200">
                     <img src={img.imageUrl} alt="기존 이미지" className="w-full h-full object-cover" />
-                    {/* Optionally add delete button for existing images */}
                   </div>
                 ))}
               </div>
             )}
-            {/* Input for new images */}
             <Input
               id="images"
               type="file"
@@ -352,7 +325,6 @@ export default function AdminProductFormPage({
               ref={fileInputRef}
               className="h-10 bg-secondary border-0"
             />
-            {/* Display previews for newly selected images */}
             {imagePreviews.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mt-2">
                 {imagePreviews.map((previewUrl, index) => (
@@ -364,8 +336,6 @@ export default function AdminProductFormPage({
             )}
           </div>
 
-
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               상품 설명
@@ -383,7 +353,6 @@ export default function AdminProductFormPage({
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

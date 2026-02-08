@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
   // Auth
   LOGIN: "/api/members/login",
   SIGNUP: "/api/members/signup",
-
+  REISSUE: "/api/members/reissue", // Add this
   // Products (User)
   PRODUCTS: "/api/products",
 

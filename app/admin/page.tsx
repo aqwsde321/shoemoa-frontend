@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { AdminHeader } from "@/components/layout/admin-header";
@@ -27,17 +27,33 @@ import {
 import { getAdminProducts, deleteProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 import Image from "next/image";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export default function AdminProductsPage() {
+  const { authenticatedFetch } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  const fetchProducts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await getAdminProducts(authenticatedFetch);
+      if (response.success && response.data) {
+        setProducts(response.data.content);
+      }
+    } catch (error) {
+      console.error("[v0] Failed to fetch products:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [authenticatedFetch]);
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -51,20 +67,6 @@ export default function AdminProductsPage() {
     }
   }, [searchQuery, products]);
 
-  const fetchProducts = async () => {
-    setIsLoading(true);
-    try {
-      const response = await getAdminProducts();
-      if (response.success && response.data) {
-        setProducts(response.data.content);
-      }
-    } catch (error) {
-      console.error("[v0] Failed to fetch products:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("ko-KR").format(price);
   };
@@ -73,7 +75,7 @@ export default function AdminProductsPage() {
     if (!deleteId) return;
 
     try {
-      await deleteProduct(deleteId);
+      await deleteProduct(authenticatedFetch, deleteId);
       setProducts((prev) => prev.filter((p) => p.id !== deleteId));
     } catch (error) {
       console.error("[v0] Failed to delete product:", error);
@@ -82,7 +84,6 @@ export default function AdminProductsPage() {
     }
   };
 
-  // Mobile Card View
   const ProductCard = ({ product }: { product: Product }) => (
     <div className="bg-card rounded-lg border border-border p-4">
       <div className="flex gap-4">
@@ -126,7 +127,6 @@ export default function AdminProductsPage() {
       <AdminHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">상품 관리</h1>
@@ -142,7 +142,6 @@ export default function AdminProductsPage() {
           </Button>
         </div>
 
-        {/* Search */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -169,7 +168,6 @@ export default function AdminProductsPage() {
           </div>
         ) : (
           <>
-            {/* Desktop Table */}
             <div className="hidden md:block rounded-lg border border-border overflow-hidden">
               <Table>
                 <TableHeader>
@@ -225,7 +223,6 @@ export default function AdminProductsPage() {
               </Table>
             </div>
 
-            {/* Mobile Card List */}
             <div className="md:hidden space-y-4">
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
@@ -235,7 +232,6 @@ export default function AdminProductsPage() {
         )}
       </main>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

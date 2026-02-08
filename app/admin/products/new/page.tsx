@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { createProductWithImages } from "@/lib/api";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export default function NewProductPage() {
+  const { authenticatedFetch } = useAuth();
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [description, setDescription] = useState("");
@@ -49,18 +51,9 @@ export default function NewProductPage() {
       price,
     };
 
-    const formData = new FormData();
-    formData.append("data", JSON.stringify(productData));
-
-    if (images) {
-      for (let i = 0; i < images.length; i++) {
-        formData.append("images", images[i]);
-      }
-    }
-
     // Use the new API function
     try {
-      const result = await createProductWithImages(productData, images);
+      const result = await createProductWithImages(authenticatedFetch, productData, images);
 
       if (result.success) {
         alert("상품이 성공적으로 등록되었습니다.");
