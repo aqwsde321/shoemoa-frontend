@@ -2,43 +2,64 @@
 
 이 문서는 Shoemoa 프로젝트에 구현된 JWT 기반 인증 시스템의 상세 설계와 동작 방식을 설명합니다. 보안과 사용자 경험의 균형을 위해 **인메모리 액세스 토큰**과 **HTTP-only 리프레시 토큰** 방식을 채택하고 있습니다.
 
-## 백엔드 (API) 역할
+## 1. 개요 및 정책
 
-백엔드는 인증 흐름에서 다음 역할을 담당합니다:
+Shoemoa는 Stateless한 인증을 위해 JWT(JSON Web Token)를 사용합니다.
 
-1.  **로그인 엔드포인트 (`POST /api/members/login`):**
-    *   사용자 자격 증명(이메일, 비밀번호)을 검증합니다.
-    *   인증에 성공하면:
-        *   **만료 기간이 짧은 액세스 토큰**을 생성하여 응답 본문(JSON)에 담아 전송합니다.
-        *   **만료 기간이 긴 리프레시 토큰**을 생성하여 `HttpOnly`, `Secure`, `SameSite=Lax` 설정이 완료된 **쿠키**로 설정합니다.
+### 1.1 토큰 정책
 
-2.  **리프레시 토큰 엔드포인트 (`POST /api/members/reissue`):**
-    *   브라우저가 자동으로 전송하는 HTTP-only 리프레시 토큰 쿠키의 유효성을 검증합니다.
-    *   유효하면 **새로운 액세스 토큰**을 발급하여 응답 본문에 담아 프론트엔드로 전송합니다.
-    *   리프레시 토큰이 유효하지 않으면 401 Unauthorized 응답을 반환합니다.
+| 항목 | Access Token | Refresh Token |
+| :--- | :--- | :--- |
+| **용도** | API 요청 인증 | Access Token 재발급 |
+| **유효 기간** | 1시간 (3,600,000ms) | 7일 (604,800,000ms) |
+| **저장 위치** | 프론트엔드 메모리 (Variable) | HTTP-only 쿠키 & DB |
+| **전송 방식** | `Authorization` 헤더 (Bearer) | Cookie |
+| **보안 설정** | - | `HttpOnly`, `Secure`, `SameSite=Strict` |
 
-3.  **권한 검증:**
-    *   보호된 엔드포인트 요청 시 `Authorization` 헤더의 `Bearer <AccessToken>`을 검증합니다.
+### 1.2 토큰 Payload 정보
 
-## 프론트엔드 (Next.js) 역할
+*   **Access Token**: `sub`(ID), `email`, `role`(USER/ADMIN), `iat`, `exp`
+*   **Refresh Token**: `sub`(ID), `type`: "refresh", `iat`, `exp`
 
-프론트엔드는 인증 상태 관리와 보안을 위해 다음을 수행합니다:
+## 2. 인증 프로세스
 
-1.  **로그인 및 상태 관리:**
-    *   로그인 성공 시 수신한 **이메일과 사용자 역할(role)**은 `localStorage`에 저장하여 새로고침 후에도 유지합니다.
-    *   **액세스 토큰은 메모리(in-memory)에만 저장**하여 XSS 공격 노출 위험을 최소화합니다.
+### 2.1 로그인 (`POST /api/members/login`)
+1.  사용자가 이메일/비밀번호로 로그인 요청.
+2.  서버 인증 성공 시 Access Token과 Refresh Token 생성.
+3.  **RTR (Refresh Token Rotation)**: Refresh Token은 DB(`refresh_tokens` 테이블)에 저장/업데이트됩니다.
+4.  Access Token은 **JSON 응답 본문**으로, Refresh Token은 **HTTP-only 쿠키**로 프론트엔드에 전달됩니다.
 
-2.  **Silent Refresh (자동 로그인):**
-    *   앱 초기화 시(`use-auth.tsx`) `localStorage`의 메타데이터를 확인하고, 백엔드의 `reissue` 엔드포인트를 호출하여 자동으로 액세스 토큰을 복구합니다.
-    *   **Request Deduplication 적용**: 여러 컴포넌트가 동시에 렌더링되며 `reissue`를 각자 호출하더라도, 실제 네트워크 요청은 단 한 번만 수행되도록 최적화되어 있습니다.
+### 2.2 API 요청 및 권한 검증
+1.  프론트엔드는 보호된 리소스 요청 시 `Authorization` 헤더에 `Bearer <AccessToken>`을 포함합니다.
+2.  서버의 `JwtAuthenticationFilter`에서 토큰을 검증합니다.
+3.  유효한 토큰일 경우 요청을 처리하고, 만료되거나 잘못된 경우 `401 Unauthorized`를 응답합니다.
 
-3.  **API 요청 인터셉터 (`authenticatedFetch`):**
-    *   401 Unauthorized 응답(액세스 토큰 만료) 수신 시, 자동으로 `reissue`를 요청하여 토큰을 갱신하고 원래의 요청을 재시도합니다.
-    *   이 함수는 `useAuth` 훅 내부에서 정의되어 인증 상태(`setAuthTokens`)와 로그아웃 로직에 접근할 수 있습니다.
+### 2.3 토큰 재발급 (Silent Refresh / Reissue)
+1.  액세스 토큰이 만료되어 서버로부터 `TOKEN_EXPIRED` 에러를 받으면, 프론트엔드는 자동으로 `/api/members/reissue`를 호출합니다.
+2.  이때 브라우저는 쿠키에 담긴 Refresh Token을 자동으로 전송합니다.
+3.  서버는 쿠키의 토큰을 DB와 대조하여 유효성을 검증합니다.
+4.  **검증 성공 시**: 새로운 Access Token(JSON)과 새로운 Refresh Token(Cookie)을 발급하여 RTR을 수행합니다.
 
-### `authenticatedFetch`의 동작 흐름
+## 3. 에러 코드 대응 가이드
 
-액세스 토큰이 만료되었을 때 사용자가 모르게 처리되는 '자동 복구' 과정입니다.
+백엔드에서 반환하는 인증 관련 에러 코드별 프론트엔드 대응 방식입니다.
+
+| Status | Error Code | Description | Action |
+| :--- | :--- | :--- | :--- |
+| 401 | `TOKEN_EXPIRED` | Access Token 만료 | `/api/members/reissue` 호출 시도 |
+| 401 | `INVALID_TOKEN` | 위변조된 토큰 | 로그아웃 처리 및 재로그인 유도 |
+| 401 | `UNAUTHORIZED` | 인증 정보 누락 | 로그인 페이지로 이동 |
+| 401 | `MISSING_COOKIE` | Refresh Token 쿠키 없음 | 재로그인 필요 |
+| 403 | `FORBIDDEN` | 접근 권한 부족 | 권한 부족 안내 또는 이전 페이지 이동 |
+
+## 4. 프론트엔드 구현 상세 (Next.js)
+
+### 4.1 상태 관리
+*   **액세스 토큰**: `lib/auth-storage.ts`를 통해 메모리에 보관하며, XSS 공격으로부터 보호합니다.
+*   **사용자 정보**: `email`, `role` 등은 `localStorage`에 저장하여 새로고침 시 세션을 복구하는 힌트로 사용합니다.
+
+### 4.2 API 인터셉터 (`authenticatedFetch`)
+`use-auth.tsx`에 구현된 이 함수는 401 에러 감지 시 자동으로 재발급 로직을 수행하고 원래 요청을 재시도합니다.
 
 ```mermaid
 sequenceDiagram
@@ -53,7 +74,7 @@ sequenceDiagram
     rect rgb(240, 240, 240)
         Note over AF: "아, 토큰이 만료되었네?"
         AF->>Server: reissueToken() 요청 (HTTP-only RT 쿠키 포함)
-        Server-->>AF: 새로운 AT 발급 성공
+        Server-->>AF: 새로운 AT 발급 성공 (RTR 적용)
         Note over AF: 새로운 AT를 메모리에 저장
     end
 
@@ -62,38 +83,9 @@ sequenceDiagram
     AF-->>App: 최종 결과 반환
 ```
 
-**상세 로직 단계:**
-1.  **1차 시도**: 일반적인 `fetchApi`를 통해 서버에 요청을 보냅니다.
-2.  **만료 감지**: 서버에서 `401` 에러와 함께 `TOKEN_EXPIRED` 코드를 반환하면 에러를 가로챕니다.
-3.  **토큰 갱신 (Silent Refresh)**: 백엔드의 `/reissue` 엔드포인트를 호출합니다. 이때 브라우저가 금고(HTTP-only 쿠키)에서 리프레시 토큰을 꺼내 자동으로 서버에 전달합니다.
-4.  **상태 업데이트**: 새로 받은 액세스 토큰을 인메모리에 업데이트합니다.
-5.  **2차 시도 (Retry)**: 실패했던 원래 요청을 새 토큰과 함께 다시 보냅니다.
-6.  **최종 반환**: 사용자는 중간의 2~5단계를 전혀 느끼지 못하고 성공 데이터만 받게 됩니다.
+## 5. 보안 설계 원칙
 
-4.  **로그아웃:**
-    *   `auth-storage.ts`를 통해 메모리상의 토큰과 `localStorage`의 사용자 정보를 삭제하고 로그인 페이지로 리디렉션합니다.
-
-## 보안 고려 사항
-
-*   **액세스 토큰**: 아주 짧은 만료 시간 사용 및 메모리 저장을 통해 탈취 위험을 낮춥니다.
-*   **리프레시 토큰**: `HttpOnly` 쿠키를 사용하여 자바스크립트 접근을 원천 차단(XSS 방지)합니다.
-*   **HTTPS**: 모든 인증 관련 통신은 반드시 보안 연결을 통해 이루어져야 합니다.
-
-## 보안 개념 및 FAQ (Educational Guide)
-
-### 1. 액세스 토큰을 왜 메모리(In-Memory)에 저장하나요?
-**자바스크립트를 이용한 토큰 탈취(XSS 공격)를 방어**하기 위해서입니다. 
-`localStorage`나 `Cookie`에 직접 액세스 토큰을 저장하면, 웹사이트 상에 심어진 악성 스크립트가 `localStorage.getItem()` 등을 통해 토큰을 쉽게 읽어갈 수 있습니다. 반면 메모리에 저장된 변수는 페이지가 새로고침되거나 닫히면 사라지므로 해커가 접근하기 훨씬 어렵습니다.
-
-### 2. HTTP-only 쿠키는 무엇이 다른가요?
-리프레시 토큰이 저장되는 쿠키에 `HttpOnly` 설정을 하면, **브라우저에서 자바스크립트로 이 쿠키에 접근하는 것이 원천 차단**됩니다. 
-즉, 해커가 XSS 공격에 성공하더라도 리프레시 토큰은 절대 훔쳐갈 수 없습니다. 오직 브라우저가 백엔드 서버와 통신할 때만 내부적으로 쿠키를 실어 보내기 때문에 안전합니다.
-
-### 3. Silent Refresh(자동 로그인)를 자주 하면 리프레시 토큰이 위험하지 않나요?
-리프레시 토큰은 자바스크립트가 만질 수 없는 **'브라우저 금고(HTTP-only 쿠키)'** 안에 안전하게 보관되어 있으므로, 자주 사용되더라도 노출될 위험이 매우 적습니다. 또한 HTTPS 보안 연결에서만 전송되도록(`Secure`) 설정하여 네트워크 복제 위험도 차단합니다.
-
-### 4. 리프레시 토큰이 탈취되면 어떻게 하나요? (Refresh Token Rotation)
-보안을 더 강화하기 위해 **'Refresh Token Rotation'** 기법을 권장합니다.
-*   토큰 재발급 요청 시마다 새로운 리프레시 토큰을 함께 발급합니다.
-*   한 번 사용된 리프레시 토큰은 즉시 무효화됩니다.
-*   만약 해커가 훔친 토큰을 사용하려 해도 이미 정상 사용자가 재발급을 받았다면 해커의 토큰은 무효 처리되며, 비정상 접근으로 감지하여 해당 계정의 모든 세션을 종료시킬 수 있습니다.
+*   **XSS 방어**: 액세스 토큰은 메모리에, 리프레시 토큰은 `HttpOnly` 쿠키에 저장하여 스크립트 접근을 차단합니다.
+*   **CSRF 방어**: 리프레시 토큰 쿠키에 `SameSite=Strict`를 설정하여 외부 사이트에서의 요청 위조를 방지합니다.
+*   **RTR (Refresh Token Rotation)**: 재발급 시마다 리프레시 토큰을 교체하여 탈취된 토큰의 재사용을 방지합니다.
+*   **DB 연동**: 서버 측 DB에 리프레시 토큰을 관리하여 필요 시 강제 로그아웃 기능을 지원합니다.
