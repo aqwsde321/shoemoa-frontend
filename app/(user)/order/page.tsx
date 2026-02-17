@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
-import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { getCart, createOrder } from "@/lib/api";
 import type { CartItem } from "@/lib/types";
 
 export default function OrderPage() {
   const router = useRouter();
+  const { authenticatedFetch } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOrdering, setIsOrdering] = useState(false);
@@ -21,7 +22,7 @@ export default function OrderPage() {
     const fetchCart = async () => {
       setIsLoading(true);
       try {
-        const response = await getCart();
+        const response = await getCart(authenticatedFetch);
         if (response.success) {
           setCartItems(response.data);
         }
@@ -47,7 +48,7 @@ export default function OrderPage() {
     setIsOrdering(true);
     try {
       const cartItemIds = cartItems.map((item) => item.id);
-      const response = await createOrder(cartItemIds);
+      const response = await createOrder(authenticatedFetch, cartItemIds);
       if (response.success) {
         setOrderId(response.data.id);
         setIsComplete(true);
@@ -61,8 +62,7 @@ export default function OrderPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
+      <div className="min-h-screen bg-background pt-16">
         <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-secondary rounded w-32" />
@@ -76,8 +76,7 @@ export default function OrderPage() {
 
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
+      <div className="min-h-screen bg-background pt-16">
         <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto bg-foreground rounded-full flex items-center justify-center mb-6">
@@ -105,8 +104,7 @@ export default function OrderPage() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
+      <div className="min-h-screen bg-background pt-16">
         <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <h1 className="text-xl font-semibold mb-4">주문할 상품이 없습니다</h1>
@@ -120,8 +118,7 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="min-h-screen bg-background pt-16">
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
@@ -145,7 +142,7 @@ export default function OrderPage() {
                 <div key={item.id} className="flex gap-4">
                   <div className="w-16 h-16 overflow-hidden rounded-md bg-secondary shrink-0">
                     <img
-                      src={item.product.image || "/placeholder.svg"}
+                      src={item.product.thumbnailUrl || "/placeholder.svg"}
                       alt={item.product.name}
                       className="h-full w-full object-cover object-center"
                       crossOrigin="anonymous"
