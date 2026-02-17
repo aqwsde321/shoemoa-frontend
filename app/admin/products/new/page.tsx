@@ -49,6 +49,7 @@ export default function NewProductPage() {
       description,
       color,
       price,
+      options: [],
     };
 
     // Use the new API function

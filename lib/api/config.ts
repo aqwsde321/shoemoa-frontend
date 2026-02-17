@@ -18,5 +18,5 @@ export const API_ENDPOINTS = {
   ORDERS: "/api/orders",
 
   // Admin Products
-  ADMIN_PRODUCTS: "/api/admin/products",
+  ADMIN_PRODUCTS: "/api/products",
 } as const;

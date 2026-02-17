@@ -128,7 +128,8 @@ export default function AdminProductFormPage({
 
     try {
       if (isNew) {
-        const result = await createProductWithImages(authenticatedFetch, formData, selectedFilesToUpload);
+        const productData = { ...formData, options: productOptions };
+        const result = await createProductWithImages(authenticatedFetch, productData, selectedFilesToUpload);
         if (result.success) {
           alert("상품이 성공적으로 등록되었습니다.");
           router.push("/admin");

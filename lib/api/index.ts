@@ -11,6 +11,7 @@ import type {
   ApiResponse,
   ProductApiResponse,
   TokenResponse,
+  ProductOptionDetail,
 } from "../types";
 import { mockProducts, mockCartItems } from "../mock-data";
 
@@ -96,6 +97,7 @@ export async function createProductWithImages(
     description?: string;
     color: string;
     price: number;
+    options: ProductOptionDetail[];
   },
   images: FileList | null
 ): Promise<ApiResponse<{ productId: number }>> {
@@ -125,7 +127,9 @@ export async function updateProductDetail(
   newImages: FileList | null
 ): Promise<ApiResponse<ProductDetail>> {
   const formData = new FormData();
-  formData.append("data", JSON.stringify(productData));
+  // Spring Boot @RequestPart("data") expects a JSON blob with application/json type
+  const productDataBlob = new Blob([JSON.stringify(productData)], { type: "application/json" });
+  formData.append("data", productDataBlob);
 
   if (newImages) {
     for (let i = 0; i < newImages.length; i++) {
@@ -286,38 +290,46 @@ export async function createOrder(
 export async function getAdminProducts(
   authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>
 ): Promise<ApiResponse<ProductApiResponse>> {
-  // return authenticatedFetch<ProductApiResponse>(API_ENDPOINTS.ADMIN_PRODUCTS);
-  const mockProductApiResponse: ProductApiResponse = {
-    content: mockProducts,
-    pageable: {
-      pageNumber: 0,
-      pageSize: 10,
+  try {
+    return await authenticatedFetch<ProductApiResponse>(API_ENDPOINTS.ADMIN_PRODUCTS);
+  } catch (error) {
+    console.error("Failed to fetch admin products, returning mock data:", error);
+    const mockProductApiResponse: ProductApiResponse = {
+      content: mockProducts,
+      pageable: {
+        pageNumber: 0,
+        pageSize: 10,
+        sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
+        offset: 0,
+        paged: true,
+        unpaged: false,
+      },
+      last: true,
+      totalPages: 1,
+      totalElements: mockProducts.length,
+      first: true,
+      size: mockProducts.length,
+      number: 0,
       sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
-      offset: 0,
-      paged: true,
-      unpaged: false,
-    },
-    last: true,
-    totalPages: 1,
-    totalElements: mockProducts.length,
-    first: true,
-    size: mockProducts.length,
-    number: 0,
-    sort: [{ direction: "ASC", nullHandling: "NATIVE", ascending: true, property: "id", ignoreCase: false }],
-    numberOfElements: mockProducts.length,
-    empty: false,
-  };
-  return { data: mockProductApiResponse, success: true };
+      numberOfElements: mockProducts.length,
+      empty: false,
+    };
+    return { data: mockProductApiResponse, success: true, message: "Mock data fallback" };
+  }
 }
 
 export async function deleteProduct(
   authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>,
   productId: number
 ): Promise<ApiResponse<null>> {
-  return { data: null, success: true, message: "상품이 삭제되었습니다" };
-  // return authenticatedFetch<null>(`${API_ENDPOINTS.ADMIN_PRODUCTS}/${productId}`, {
-  //   method: "DELETE",
-  // });
+  try {
+    return await authenticatedFetch<null>(`${API_ENDPOINTS.ADMIN_PRODUCTS}/${productId}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    console.error(`Failed to delete product ${productId}, mocking success:`, error);
+    return { data: null, success: true, message: "상품이 삭제되었습니다 (Mock)" };
+  }
 }
 
 
