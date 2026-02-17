@@ -55,7 +55,7 @@ npm run lint
 
 - 에이전트는 항상 한국어로 응답해야 합니다.
 - 모든 아티팩트 문서(`implementation_plan.md`, `walkthrough.md`, `task.md` 등)는 항상 한국어로 작성해야 합니다.
-- Git 커밋 메시지는 항상 한국어로 작성해야 합니다.
+- Git 커밋 메시지는 **Angular Commit Convention**을 따르며, 설명은 항상 한국어로 작성해야 합니다. (예: `feat(auth): 로그인 기능 구현`)
 
 ---
 
