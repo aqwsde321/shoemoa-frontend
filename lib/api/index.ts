@@ -37,6 +37,7 @@ export async function fetchApi<T>(
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: headers,
+      credentials: "include", // 쿠키 전송 및 수신을 위해 필요 (Refresh Token 대비)
       ...options,
     });
 
