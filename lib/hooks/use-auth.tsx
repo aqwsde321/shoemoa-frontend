@@ -50,22 +50,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUserEmailState(email);
   }, []);
 
-  useEffect(() => {
-    const token = getAccessToken();
-    const role = getUserRole();
-    const email = getUserEmail();
-
-    if (token && role && email) {
-      setIsAuthenticated(true);
-      setUserRoleState(role);
-      setUserEmailState(email);
-    } else {
-      setIsAuthenticated(false);
-      setUserRoleState(null);
-      setUserEmailState(null);
-    }
+  const logout = useCallback(() => {
+    setIsLoading(true);
+    removeAccessToken();
+    removeUserRole();
+    removeUserEmail();
+    setIsAuthenticated(false);
+    setUserRoleState(null);
+    setUserEmailState(null);
+    router.push("/login");
     setIsLoading(false);
-  }, []);
+  }, [router]);
 
   const login = useCallback(
     async (credentials: LoginRequest): Promise<string | null> => {
@@ -89,17 +84,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     [setAuthTokens]
   );
 
-  const logout = useCallback(() => {
-    setIsLoading(true);
-    removeAccessToken();
-    removeUserRole();
-    removeUserEmail();
-    setIsAuthenticated(false);
-    setUserRoleState(null);
-    setUserEmailState(null);
-    router.push("/login");
-    setIsLoading(false);
-  }, [router]);
+  useEffect(() => {
+    const initAuth = async () => {
+      const role = getUserRole();
+      const email = getUserEmail();
+
+      if (role && email) {
+        // We have user metadata, try to get a new access token via silent refresh
+        try {
+          const response = await reissueToken();
+          if (response.success) {
+            setAuthTokens(response.data.accessToken, role, email);
+          } else {
+            // Refresh token might have expired
+            logout();
+          }
+        } catch (error) {
+          console.error("Silent refresh failed:", error);
+          logout();
+        }
+      } else {
+        // No user info, explicitly set unauthenticated
+        setIsAuthenticated(false);
+        setUserRoleState(null);
+        setUserEmailState(null);
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+  }, [setAuthTokens, logout]);
+
 
   const authenticatedFetch = useCallback(async <T,>(
     endpoint: string,

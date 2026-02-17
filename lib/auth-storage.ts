@@ -20,26 +20,44 @@ export const removeAccessToken = () => {
 
 export const setUserRole = (role: string) => {
   _userRole = role;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("shoemoa_role", role);
+  }
 };
 
 export const getUserRole = (): string | null => {
+  if (!_userRole && typeof window !== "undefined") {
+    _userRole = localStorage.getItem("shoemoa_role");
+  }
   return _userRole;
 };
 
 export const removeUserRole = () => {
   _userRole = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("shoemoa_role");
+  }
 };
 
 export const setUserEmail = (email: string) => {
   _userEmail = email;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("shoemoa_email", email);
+  }
 };
 
 export const getUserEmail = (): string | null => {
+  if (!_userEmail && typeof window !== "undefined") {
+    _userEmail = localStorage.getItem("shoemoa_email");
+  }
   return _userEmail;
 };
 
 export const removeUserEmail = () => {
   _userEmail = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("shoemoa_email");
+  }
 };
 
 /**
