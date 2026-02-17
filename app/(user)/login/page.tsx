@@ -69,19 +69,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="p-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>홈으로</span>
-        </Link>
-      </header>
-
-      {/* Main Content */}
+    <>
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
@@ -162,6 +150,6 @@ export default function LoginPage() {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

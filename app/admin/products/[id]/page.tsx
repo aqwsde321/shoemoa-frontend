@@ -4,7 +4,6 @@ import React, { useState, useEffect, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, X, PlusCircle } from "lucide-react";
-import { AdminHeader } from "@/components/layout/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +65,10 @@ export default function AdminProductFormPage({
           const response = await getProductById(Number(id));
           if (response.success && response.data) {
             const { options, images, ...rest } = response.data;
-            setFormData(rest);
+            setFormData({
+              ...rest,
+              description: response.data.description || ""
+            });
             setProductOptions(options);
             setProductImages(images);
           }
@@ -153,232 +155,224 @@ export default function AdminProductFormPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminHeader />
-        <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-6 bg-secondary rounded w-24" />
-            <div className="h-8 bg-secondary rounded w-48" />
-            <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-12 bg-secondary rounded" />
-              ))}
-            </div>
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-6 bg-secondary rounded w-24" />
+          <div className="h-8 bg-secondary rounded w-48" />
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-12 bg-secondary rounded" />
+            ))}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminHeader />
+    <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Link
+        href="/admin"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>상품 목록</span>
+      </Link>
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>상품 목록</span>
-        </Link>
+      <h1 className="text-2xl font-bold tracking-tight mb-8">
+        {isNew ? "상품 등록" : "상품 수정"}
+      </h1>
 
-        <h1 className="text-2xl font-bold tracking-tight mb-8">
-          {isNew ? "상품 등록" : "상품 수정"}
-        </h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            상품명 *
+          </Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="상품명을 입력하세요"
+            className="h-12 bg-secondary border-0"
+            required
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              상품명 *
-            </Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="상품명을 입력하세요"
-              className="h-12 bg-secondary border-0"
-              required
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="brand" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            브랜드 *
+          </Label>
+          <Input
+            id="brand"
+            value={formData.brand}
+            onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+            placeholder="브랜드를 입력하세요"
+            className="h-12 bg-secondary border-0"
+            required
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="brand" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              브랜드 *
-            </Label>
-            <Input
-              id="brand"
-              value={formData.brand}
-              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              placeholder="브랜드를 입력하세요"
-              className="h-12 bg-secondary border-0"
-              required
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="price" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            가격 (원) *
+          </Label>
+          <Input
+            id="price"
+            type="number"
+            value={formData.price || ""}
+            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+            placeholder="0"
+            className="h-12 bg-secondary border-0"
+            required
+            min={0}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="price" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              가격 (원) *
-            </Label>
-            <Input
-              id="price"
-              type="number"
-              value={formData.price || ""}
-              onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-              placeholder="0"
-              className="h-12 bg-secondary border-0"
-              required
-              min={0}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              색상 *
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABLE_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, color })}
-                  className={`px-3 py-2 text-sm rounded-md transition-colors ${
-                    formData.color === color
-                      ? "bg-foreground text-background"
-                      : "bg-secondary text-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  {color}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                사이즈 및 재고 *
-              </Label>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddOption}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                옵션 추가
-              </Button>
-            </div>
-            {productOptions.length === 0 && (
-              <p className="text-sm text-muted-foreground">최소 한 개 이상의 사이즈 옵션을 추가해주세요.</p>
-            )}
-            {productOptions.map((option, index) => (
-              <div key={index} className="flex items-end gap-2 bg-secondary p-3 rounded-md">
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor={`size-${index}`} className="sr-only">사이즈</Label>
-                  <select
-                    id={`size-${index}`}
-                    value={option.size}
-                    onChange={(e) => handleOptionChange(index, "size", e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {AVAILABLE_SIZES.map((size) => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor={`stock-${index}`} className="sr-only">재고</Label>
-                  <Input
-                    id={`stock-${index}`}
-                    type="number"
-                    value={option.stock}
-                    onChange={(e) => handleOptionChange(index, "stock", e.target.value)}
-                    placeholder="재고"
-                    min={0}
-                    className="h-10 bg-background border-0"
-                  />
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(index)}>
-                  <X className="h-4 w-4 text-destructive" />
-                  <span className="sr-only">옵션 제거</span>
-                </Button>
-              </div>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            색상 *
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {AVAILABLE_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setFormData({ ...formData, color })}
+                className={`px-3 py-2 text-sm rounded-md transition-colors ${
+                  formData.color === color
+                    ? "bg-foreground text-background"
+                    : "bg-secondary text-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {color}
+              </button>
             ))}
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="images" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              상품 이미지
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              사이즈 및 재고 *
             </Label>
-            {productImages.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {/* ProductImage a `id` property, so we can use that as a key. */}
-                {productImages.map((img, index) => (
-                  <div key={index} className="relative w-full h-24 rounded-md overflow-hidden border border-gray-200">
-                    <img src={img.imageUrl} alt="기존 이미지" className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            )}
-            <Input
-              id="images"
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              accept="image/*"
-              ref={fileInputRef}
-              className="h-10 bg-secondary border-0"
-            />
-            {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {imagePreviews.map((previewUrl, index) => (
-                  <div key={index} className="relative w-full h-24 rounded-md overflow-hidden border border-gray-200">
-                    <img src={previewUrl} alt={`새 이미지 미리보기 ${index + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            )}
+            <Button type="button" variant="outline" size="sm" onClick={handleAddOption}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              옵션 추가
+            </Button>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              상품 설명
-            </Label>
-            <Textarea
-              id="description"
-              value={formData.description || ""}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="상품에 대한 설명을 입력하세요"
-              className="min-h-[120px] bg-secondary border-0 resize-none"
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
+          {productOptions.length === 0 && (
+            <p className="text-sm text-muted-foreground">최소 한 개 이상의 사이즈 옵션을 추가해주세요.</p>
           )}
+          {productOptions.map((option, index) => (
+            <div key={index} className="flex items-end gap-2 bg-secondary p-3 rounded-md">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor={`size-${index}`} className="sr-only">사이즈</Label>
+                <select
+                  id={`size-${index}`}
+                  value={option.size}
+                  onChange={(e) => handleOptionChange(index, "size", e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {AVAILABLE_SIZES.map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label htmlFor={`stock-${index}`} className="sr-only">재고</Label>
+                <Input
+                  id={`stock-${index}`}
+                  type="number"
+                  value={option.stock}
+                  onChange={(e) => handleOptionChange(index, "stock", e.target.value)}
+                  placeholder="재고"
+                  min={0}
+                  className="h-10 bg-background border-0"
+                />
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(index)}>
+                <X className="h-4 w-4 text-destructive" />
+                <span className="sr-only">옵션 제거</span>
+              </Button>
+            </div>
+          ))}
+        </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 h-12 bg-transparent"
-              onClick={() => router.push("/admin")}
-            >
-              취소
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 h-12"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                "저장"
-              )}
-            </Button>
-          </div>
-        </form>
-      </main>
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="images" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            상품 이미지
+          </Label>
+          {productImages.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {productImages.map((img, index) => (
+                <div key={index} className="relative w-full h-24 rounded-md overflow-hidden border border-gray-200">
+                  <img src={img.imageUrl} alt="기존 이미지" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+          <Input
+            id="images"
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            accept="image/*"
+            ref={fileInputRef}
+            className="h-10 bg-secondary border-0"
+          />
+          {imagePreviews.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {imagePreviews.map((previewUrl, index) => (
+                <div key={index} className="relative w-full h-24 rounded-md overflow-hidden border border-gray-200">
+                  <img src={previewUrl} alt={`새 이미지 미리보기 ${index + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            상품 설명
+          </Label>
+          <Textarea
+            id="description"
+            value={formData.description || ""}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="상품에 대한 설명을 입력하세요"
+            className="min-h-[120px] bg-secondary border-0 resize-none"
+          />
+        </div>
+
+        {error && (
+          <p className="text-sm text-destructive text-center">{error}</p>
+        )}
+
+        <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 h-12 bg-transparent"
+            onClick={() => router.push("/admin")}
+          >
+            취소
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1 h-12"
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              "저장"
+            )}
+          </Button>
+        </div>
+      </form>
+    </main>
   );
 }

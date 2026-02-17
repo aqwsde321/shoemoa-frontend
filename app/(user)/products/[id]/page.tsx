@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/hooks/use-auth";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
-import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { getProductById, addToCart } from "@/lib/api";
 import type { ProductDetail } from "@/lib/types";
@@ -16,6 +16,7 @@ export default function ProductDetailPage() {
   const id = params.id as string;
   const router = useRouter();
 
+  const { authenticatedFetch, isLoading: isAuthLoading } = useAuth();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState("");
@@ -72,7 +73,7 @@ export default function ProductDetailPage() {
 
     setIsAddingToCart(true);
     try {
-      await addToCart(Number(id), quantity, selectedSize, product.color);
+      await addToCart(authenticatedFetch, Number(id), quantity, selectedSize, product.color);
       setAddedToCart(true);
       setTimeout(() => setAddedToCart(false), 2000);
     } catch (error) {
@@ -87,7 +88,7 @@ export default function ProductDetailPage() {
 
     setIsAddingToCart(true);
     try {
-      await addToCart(Number(id), quantity, selectedSize, product.color);
+      await addToCart(authenticatedFetch, Number(id), quantity, selectedSize, product.color);
       router.push("/cart");
     } catch (error) {
       console.error("[v0] Failed to add to cart:", error);
@@ -97,38 +98,32 @@ export default function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-6 bg-secondary rounded w-24 mb-8" />
-            <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
-              <div className="aspect-square bg-secondary rounded-lg" />
-              <div className="space-y-6">
-                <div className="h-8 bg-secondary rounded w-3/4" />
-                <div className="h-6 bg-secondary rounded w-1/4" />
-                <div className="h-4 bg-secondary rounded w-full" />
-              </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-6 bg-secondary rounded w-24 mb-8" />
+          <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
+            <div className="aspect-square bg-secondary rounded-lg" />
+            <div className="space-y-6">
+              <div className="h-8 bg-secondary rounded w-3/4" />
+              <div className="h-6 bg-secondary rounded w-1/4" />
+              <div className="h-4 bg-secondary rounded w-full" />
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <h1 className="text-xl font-semibold mb-4">상품을 찾을 수 없습니다</h1>
-            <Button asChild>
-              <Link href="/products">상품 목록으로</Link>
-            </Button>
-          </div>
-        </main>
-      </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold mb-4">상품을 찾을 수 없습니다</h1>
+          <Button asChild>
+            <Link href="/products">상품 목록으로</Link>
+          </Button>
+        </div>
+      </main>
     );
   }
 
@@ -138,9 +133,7 @@ export default function ProductDetailPage() {
   const currentStock = selectedOption ? selectedOption.stock : 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
+    <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Link
@@ -310,6 +303,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

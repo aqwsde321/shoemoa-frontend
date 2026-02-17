@@ -67,6 +67,7 @@ export interface Product {
 export interface ProductDetail {
   name: string;
   brand: string;
+  description?: string;
   color: string;
   price: number;
   options: ProductOptionDetail[];

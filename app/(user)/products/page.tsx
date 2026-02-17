@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Header } from "@/components/layout/header";
 import { ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,10 +182,7 @@ export default function ProductsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">전체 상품</h1>
@@ -281,17 +277,6 @@ export default function ProductsPage() {
                   </div>
                 ))}
               </div>
-            ) : products.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-muted-foreground">검색 결과가 없습니다.</p>
-                <Button
-                  variant="link"
-                  className="mt-2"
-                  onClick={clearFilters}
-                >
-                  필터 초기화
-                </Button>
-              </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 {products.map((product) => (
@@ -301,7 +286,6 @@ export default function ProductsPage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
   );
 }

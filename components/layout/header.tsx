@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ShoppingBag, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/hooks/use-auth.tsx"; // Import useAuth
+import { useAuth } from "@/lib/hooks/use-auth"; // Import useAuth
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

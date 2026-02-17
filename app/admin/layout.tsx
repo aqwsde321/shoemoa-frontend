@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/use-auth.tsx";
+import { AdminHeader } from "@/components/layout/admin-header";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -25,5 +26,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return <div className="flex justify-center items-center h-screen text-lg">권한 확인 중...</div>;
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-background">
+      <AdminHeader />
+      {children}
+    </div>
+  );
 }

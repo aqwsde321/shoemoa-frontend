@@ -100,11 +100,14 @@ export async function createProductWithImages(
   images: FileList | null
 ): Promise<ApiResponse<{ productId: number }>> {
   const formData = new FormData();
+  
+  // Spring Boot @RequestPart("data") expects a JSON blob with application/json type
   const productDataBlob = new Blob([JSON.stringify(productData)], { type: "application/json" });
   formData.append("data", productDataBlob);
 
   if (images) {
     for (let i = 0; i < images.length; i++) {
+        // Spring Boot @RequestPart("images") expects a list of files
       formData.append("images", images[i]);
     }
   }

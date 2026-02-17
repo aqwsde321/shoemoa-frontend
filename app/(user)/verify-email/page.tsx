@@ -84,16 +84,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="p-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>홈으로</span>
-        </Link>
-      </header>
+    <>
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-md p-8 bg-secondary/30 rounded-2xl border border-secondary">
           <Suspense fallback={
@@ -106,6 +97,6 @@ export default function VerifyEmailPage() {
           </Suspense>
         </div>
       </main>
-    </div>
+    </>
   );
 }

@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
-import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { getCart, updateCartItem, removeFromCart } from "@/lib/api";
 import type { CartItem } from "@/lib/types";
 
 export default function CartPage() {
   const router = useRouter();
+  const { authenticatedFetch, isLoading: isAuthLoading } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,7 +19,7 @@ export default function CartPage() {
     const fetchCart = async () => {
       setIsLoading(true);
       try {
-        const response = await getCart();
+        const response = await getCart(authenticatedFetch);
         if (response.success) {
           setCartItems(response.data);
         }
@@ -28,8 +29,10 @@ export default function CartPage() {
         setIsLoading(false);
       }
     };
-    fetchCart();
-  }, []);
+    if (!isAuthLoading) {
+      fetchCart();
+    }
+  }, [authenticatedFetch, isAuthLoading]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("ko-KR").format(price);
@@ -39,7 +42,7 @@ export default function CartPage() {
     if (newQuantity < 1) return;
 
     try {
-      await updateCartItem(itemId, newQuantity);
+      await updateCartItem(authenticatedFetch, itemId, newQuantity);
       setCartItems((prev) =>
         prev.map((item) =>
           item.id === itemId ? { ...item, quantity: newQuantity } : item
@@ -52,7 +55,7 @@ export default function CartPage() {
 
   const handleRemoveItem = async (itemId: number) => {
     try {
-      await removeFromCart(itemId);
+      await removeFromCart(authenticatedFetch, itemId);
       setCartItems((prev) => prev.filter((item) => item.id !== itemId));
     } catch (error) {
       console.error("[v0] Failed to remove item:", error);
@@ -72,30 +75,25 @@ export default function CartPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-secondary rounded w-32" />
-            {[1, 2].map((i) => (
-              <div key={i} className="flex gap-4 p-4 bg-secondary rounded-lg">
-                <div className="w-24 h-24 bg-muted rounded" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 bg-muted rounded w-1/2" />
-                  <div className="h-4 bg-muted rounded w-1/4" />
-                </div>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-secondary rounded w-32" />
+          {[1, 2].map((i) => (
+            <div key={i} className="flex gap-4 p-4 bg-secondary rounded-lg">
+              <div className="w-24 h-24 bg-muted rounded" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 bg-muted rounded w-1/2" />
+                <div className="h-4 bg-muted rounded w-1/4" />
               </div>
-            ))}
-          </div>
-        </main>
-      </div>
+            </div>
+          ))}
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
+    <>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Link
@@ -132,7 +130,7 @@ export default function CartPage() {
                   >
                     <div className="w-24 h-24 md:w-32 md:h-32 overflow-hidden rounded-md bg-secondary">
                       <img
-                        src={item.product.image || "/placeholder.svg"}
+                        src={item.product.thumbnailUrl || "/placeholder.svg"}
                         alt={item.product.name}
                         className="h-full w-full object-cover object-center"
                         crossOrigin="anonymous"
@@ -236,6 +234,6 @@ export default function CartPage() {
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
