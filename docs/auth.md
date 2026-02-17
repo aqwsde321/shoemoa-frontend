@@ -32,8 +32,43 @@
     *   앱 초기화 시(`use-auth.tsx`) `localStorage`의 메타데이터를 확인하고, 백엔드의 `reissue` 엔드포인트를 호출하여 자동으로 액세스 토큰을 복구합니다.
     *   **Request Deduplication 적용**: 여러 컴포넌트가 동시에 렌더링되며 `reissue`를 각자 호출하더라도, 실제 네트워크 요청은 단 한 번만 수행되도록 최적화되어 있습니다.
 
-3.  **API 요청 인터셉터:**
+3.  **API 요청 인터셉터 (`authenticatedFetch`):**
     *   401 Unauthorized 응답(액세스 토큰 만료) 수신 시, 자동으로 `reissue`를 요청하여 토큰을 갱신하고 원래의 요청을 재시도합니다.
+    *   이 함수는 `useAuth` 훅 내부에서 정의되어 인증 상태(`setAuthTokens`)와 로그아웃 로직에 접근할 수 있습니다.
+
+### `authenticatedFetch`의 동작 흐름
+
+액세스 토큰이 만료되었을 때 사용자가 모르게 처리되는 '자동 복구' 과정입니다.
+
+```mermaid
+sequenceDiagram
+    participant App as 컴포넌트
+    participant AF as authenticatedFetch
+    participant Server as 백엔드 서버
+
+    App->>AF: API 요청 시도
+    AF->>Server: fetch (Expired AT 포함)
+    Server-->>AF: 401 Unauthorized (TOKEN_EXPIRED)
+    
+    rect rgb(240, 240, 240)
+        Note over AF: "아, 토큰이 만료되었네?"
+        AF->>Server: reissueToken() 요청 (HTTP-only RT 쿠키 포함)
+        Server-->>AF: 새로운 AT 발급 성공
+        Note over AF: 새로운 AT를 메모리에 저장
+    end
+
+    AF->>Server: 원래의 API 요청 재시도 (New AT 포함)
+    Server-->>AF: 200 OK (성공 데이터)
+    AF-->>App: 최종 결과 반환
+```
+
+**상세 로직 단계:**
+1.  **1차 시도**: 일반적인 `fetchApi`를 통해 서버에 요청을 보냅니다.
+2.  **만료 감지**: 서버에서 `401` 에러와 함께 `TOKEN_EXPIRED` 코드를 반환하면 에러를 가로챕니다.
+3.  **토큰 갱신 (Silent Refresh)**: 백엔드의 `/reissue` 엔드포인트를 호출합니다. 이때 브라우저가 금고(HTTP-only 쿠키)에서 리프레시 토큰을 꺼내 자동으로 서버에 전달합니다.
+4.  **상태 업데이트**: 새로 받은 액세스 토큰을 인메모리에 업데이트합니다.
+5.  **2차 시도 (Retry)**: 실패했던 원래 요청을 새 토큰과 함께 다시 보냅니다.
+6.  **최종 반환**: 사용자는 중간의 2~5단계를 전혀 느끼지 못하고 성공 데이터만 받게 됩니다.
 
 4.  **로그아웃:**
     *   `auth-storage.ts`를 통해 메모리상의 토큰과 `localStorage`의 사용자 정보를 삭제하고 로그인 페이지로 리디렉션합니다.
