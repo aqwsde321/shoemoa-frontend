@@ -101,12 +101,9 @@ VITE_API_BASE_URL=http://localhost:8080
 이 프로젝트는 **JWT (JSON Web Token)** 기반의 인증 시스템을 사용합니다.
 
 *   **로그인/회원가입:** 백엔드 API와 직접 연동하여 액세스 토큰을 발급받습니다.
-*   **토큰 및 보안:** 보안 강화를 위해 액세스 토큰은 메모리에만 저장하며, 페이지 새로고침 시 **Silent Refresh**를 통해 자동으로 복구됩니다.
-*   **메타데이터 저장:** 사용자의 역할(`role`)과 이메일은 `localStorage`에 저장되어 새로고침 후에도 신원을 식별합니다.
-*   **API 요청:** 모든 보호된 API 요청 시 `Authorization` 헤더에 액세스 토큰을 포함하며, 만료 시 자동으로 재발급을 시도합니다.
-
-**⚠️ 프로덕션 환경 인증 전략:**  
-프로덕션 환경에서의 JWT 인증 전략에 대한 상세 내용은 `GEMINI.md` 문서를 참조해 주세요. (`메모리 내 액세스 토큰 + HTTP-only 리프레시 토큰` 전략 설명)
+*   **보안 전략 (In-Memory + Silent Refresh):** 보안을 위해 액세스 토큰은 메모리에만 저장하며, 새로고침 시 HTTP-only 쿠키를 이용한 **Silent Refresh**로 자동 복구합니다.
+*   **메타데이터 유지:** 사용자의 역할(`role`)과 이메일은 `localStorage`에 저장되어 세션 유지 및 권한 확인에 사용됩니다.
+*   **상세 기술 사양:** 토큰 재발급 로직 및 보안 설계에 대한 더 자세한 내용은 [docs/auth.md](file:///Users/jino/study/project/shoemoa/shoemoa-frontend/docs/auth.md)를 참조해 주세요.
 
 ---
 
