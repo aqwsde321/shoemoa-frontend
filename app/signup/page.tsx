@@ -48,6 +48,8 @@ export default function SignupPage() {
     formState: { errors, isSubmitting },
   } = form;
 
+  const [signupSuccess, setSignupSuccess] = useState(false);
+
   const onSubmit = async (data: FormData) => {
     try {
       const signupResponse = await signup({
@@ -55,36 +57,40 @@ export default function SignupPage() {
         password: data.password,
       });
       if (signupResponse.success) {
-        console.log("[v0] Signup successful, attempting to auto-login...");
-        const role = await login({
-          email: data.email,
-          password: data.password,
-        });
-        if (role) {
-          if (role === "ADMIN") {
-            router.push("/admin");
-          } else {
-            router.push("/");
-          }
-        } else {
-          // If auto-login fails, redirect to login page for manual login.
-          form.setError("root", {
-            message: "자동 로그인에 실패했습니다. 수동으로 로그인해주세요.",
-          });
-          router.push("/login");
-        }
+        setSignupSuccess(true);
       } else {
         form.setError("root", {
           message: signupResponse.message || "회원가입에 실패했습니다.",
         });
       }
-    } catch (error) {
-      console.error("Signup or auto-login process failed:", error);
+    } catch (error: any) {
+      console.error("Signup process failed:", error);
       form.setError("root", {
-        message: "회원가입 또는 자동 로그인 중 오류가 발생했습니다.",
+        message: error.message || "회원가입 중 오류가 발생했습니다.",
       });
     }
   };
+
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">회원가입 요청 완료</h1>
+            <p className="text-muted-foreground">
+              {form.getValues("email")}로 인증 메일이 발송되었습니다.
+              메일함의 링크를 클릭하여 가입을 완료해 주세요.
+            </p>
+          </div>
+          <div className="pt-4">
+            <Button asChild className="w-full h-12">
+              <Link href="/login">확인</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

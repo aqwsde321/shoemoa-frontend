@@ -9,6 +9,9 @@ import {
   getUserRole,
   setUserRole,
   removeUserRole,
+  getUserEmail,
+  setUserEmail,
+  removeUserEmail,
 } from "@/lib/auth-storage";
 import { login as apiLogin, reissueToken, fetchApi } from "@/lib/api"; // Added reissueToken and fetchApi
 import { LoginRequest, ApiResponse } from "@/lib/types";
@@ -16,10 +19,11 @@ import { LoginRequest, ApiResponse } from "@/lib/types";
 interface AuthContextType {
   isAuthenticated: boolean;
   userRole: string | null;
+  userEmail: string | null;
   login: (credentials: LoginRequest) => Promise<string | null>;
   logout: () => void;
   isLoading: boolean;
-  setAuthTokens: (accessToken: string, role: string) => void;
+  setAuthTokens: (accessToken: string, role: string, email: string) => void;
   authenticatedFetch: <T>(endpoint: string, options?: RequestInit) => Promise<ApiResponse<T>>;
 }
 
@@ -34,25 +38,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRoleState] = useState<string | null>(null);
+  const [userEmail, setUserEmailState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const setAuthTokens = useCallback((accessToken: string, role: string) => {
+  const setAuthTokens = useCallback((accessToken: string, role: string, email: string) => {
     setAccessToken(accessToken);
     setUserRole(role);
+    setUserEmail(email);
     setIsAuthenticated(true);
     setUserRoleState(role);
+    setUserEmailState(email);
   }, []);
 
   useEffect(() => {
     const token = getAccessToken();
     const role = getUserRole();
+    const email = getUserEmail();
 
-    if (token && role) {
+    if (token && role && email) {
       setIsAuthenticated(true);
       setUserRoleState(role);
+      setUserEmailState(email);
     } else {
       setIsAuthenticated(false);
       setUserRoleState(null);
+      setUserEmailState(null);
     }
     setIsLoading(false);
   }, []);
@@ -63,7 +73,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       try {
         const response = await apiLogin(credentials);
         if (response.success) {
-          setAuthTokens(response.data.accessToken, response.data.role);
+          setAuthTokens(response.data.accessToken, response.data.role, response.data.email);
           return response.data.role;
         } else {
           console.error("Login failed:", response.message);
@@ -71,7 +81,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       } catch (error) {
         console.error("Login API call failed:", error);
-        return null;
+        throw error;
       } finally {
         setIsLoading(false);
       }
@@ -83,13 +93,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     removeAccessToken();
     removeUserRole();
+    removeUserEmail();
     setIsAuthenticated(false);
     setUserRoleState(null);
+    setUserEmailState(null);
     router.push("/login");
     setIsLoading(false);
   }, [router]);
 
-  const authenticatedFetch = useCallback(async <T>(
+  const authenticatedFetch = useCallback(async <T,>(
     endpoint: string,
     options?: RequestInit,
     retryCount = 0
@@ -101,7 +113,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         try {
           const reissueResponse = await reissueToken();
           if (reissueResponse.success) {
-            setAuthTokens(reissueResponse.data.accessToken, userRole || "USER");
+            setAuthTokens(reissueResponse.data.accessToken, userRole || "USER", userEmail || "");
             return await authenticatedFetch<T>(endpoint, options, retryCount + 1);
           } else {
             logout();
@@ -118,7 +130,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [logout, setAuthTokens, userRole]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, login, logout, isLoading, setAuthTokens, authenticatedFetch }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, userEmail, login, logout, isLoading, setAuthTokens, authenticatedFetch }}>
       {children}
     </AuthContext.Provider>
   );

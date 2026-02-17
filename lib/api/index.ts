@@ -21,8 +21,8 @@ export async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
-  const headers: HeadersInit = {
-    ...options?.headers,
+  const headers: Record<string, string> = {
+    ...Object.fromEntries(Object.entries(options?.headers || {})),
   };
 
   const accessToken = getAccessToken();
@@ -77,6 +77,12 @@ export async function signup(signupData: SignupRequest): Promise<ApiResponse<{[k
 export async function reissueToken(): Promise<ApiResponse<TokenResponse>> {
   return fetchApi<TokenResponse>(API_ENDPOINTS.REISSUE, {
     method: "POST",
+  });
+}
+
+export async function verifyEmail(email: string, token: string): Promise<ApiResponse<{ message: string }>> {
+  return fetchApi<{ message: string }>(`${API_ENDPOINTS.VERIFY_EMAIL}?email=${email}&token=${token}`, {
+    method: "GET",
   });
 }
 

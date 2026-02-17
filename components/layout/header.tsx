@@ -45,23 +45,46 @@ export function Header() {
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/cart">
                 <ShoppingBag className="h-5 w-5" />
                 <span className="sr-only">장바구니</span>
               </Link>
             </Button>
-            {isAuthenticated ? ( // Conditionally render Login/Logout button
-              <Button variant="ghost" size="icon" onClick={logout}>
-                <User className="h-5 w-5" />
-                <span className="sr-only">로그아웃</span>
-              </Button>
-            ) : (
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/login">
+            
+            {isAuthenticated ? (
+              <div className="relative group">
+                {/* Profile Icon (Hover trigger) */}
+                <Button variant="ghost" size="icon" className="rounded-full bg-secondary">
                   <User className="h-5 w-5" />
-                  <span className="sr-only">로그인</span>
+                </Button>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
+                  <div className="p-2 border-b border-border">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase px-2 py-1">계정 관리</p>
+                  </div>
+                  <div className="p-1">
+                    <Link
+                      href="/mypage"
+                      className="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                    >
+                      마이페이지
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="flex items-center w-full px-3 py-2 text-sm text-destructive rounded-md hover:bg-destructive/10 transition-colors text-left"
+                    >
+                      로그아웃
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Button asChild size="sm" className="font-semibold px-6">
+                <Link href="/login">
+                  로그인
                 </Link>
               </Button>
             )}
@@ -107,24 +130,33 @@ export function Header() {
             >
               장바구니
             </Link>
-            {isAuthenticated ? ( // Conditionally render Login/Logout button
-              <button
-                className="block text-sm font-medium py-2 w-full text-left"
-                onClick={() => {
-                  logout();
-                  setIsMenuOpen(false);
-                }}
-              >
-                로그아웃
-              </button>
+            {isAuthenticated ? (
+              <div className="space-y-1">
+                <Link
+                  href="/mypage"
+                  className="block text-sm font-medium py-3 px-2 rounded-md hover:bg-secondary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  마이페이지
+                </Link>
+                <button
+                  className="block text-sm font-medium py-3 px-2 w-full text-left text-destructive rounded-md hover:bg-destructive/10 transition-colors"
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  로그아웃
+                </button>
+              </div>
             ) : (
-              <Link
-                href="/login"
-                className="block text-sm font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                로그인
-              </Link>
+              <div className="pt-2">
+                <Button asChild className="w-full h-11 font-semibold">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                    로그인
+                  </Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>

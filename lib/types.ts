@@ -12,6 +12,13 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * Basic message response from API.
+ */
+export interface MessageResponse {
+  message: string;
+}
+
+/**
  * Pagination and sorting details from the backend.
  * Based on Spring Pageable object.
  */
@@ -145,7 +152,6 @@ export interface SignupRequest {
  */
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
   email: string;
   role: string;
 }
@@ -156,7 +162,6 @@ export interface LoginResponse {
  */
 export interface TokenResponse {
   accessToken: string;
-  refreshToken: string;
 }
 
 

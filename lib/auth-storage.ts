@@ -2,6 +2,7 @@
 
 let _accessToken: string | null = null;
 let _userRole: string | null = null;
+let _userEmail: string | null = null;
 
 export const setAccessToken = (token: string) => {
   _accessToken = token;
@@ -14,6 +15,7 @@ export const getAccessToken = (): string | null => {
 export const removeAccessToken = () => {
   _accessToken = null;
   removeUserRole();
+  removeUserEmail();
 };
 
 export const setUserRole = (role: string) => {
@@ -26,6 +28,18 @@ export const getUserRole = (): string | null => {
 
 export const removeUserRole = () => {
   _userRole = null;
+};
+
+export const setUserEmail = (email: string) => {
+  _userEmail = email;
+};
+
+export const getUserEmail = (): string | null => {
+  return _userEmail;
+};
+
+export const removeUserEmail = () => {
+  _userEmail = null;
 };
 
 /**

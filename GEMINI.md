@@ -54,6 +54,7 @@ npm run lint
 ## Agent Instructions
 
 - The agent should always respond in Korean.
+- Git 커밋 메시지는 항상 한국어로 작성해야 합니다.
 
 ---
 
